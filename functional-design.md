@@ -40,13 +40,9 @@ People genuinely want to show up for the people they care about, but daily life 
 
 3. **Suggestions Recommendation Engine:** A recommendation system (powered by simple logic or LLMs) that translates a person’s stored preferences and current context into brainstormed ideas of possible gifts, activities, or gestures that might be appropriate.
 
-## Additional Brainstormed Features:
+**NOTE: The following is an additional feature we are considering but not 100% sure yet.**
 
-**Note: These are extra ideas we had while brainstorming and may be narrowed down/excluded during functional design. 
-
-1. **Occasion Tracking & Planning:** A timeline of upcoming and past events (birthdays, milestones, personal challenges) that helps users prepare in advance and reflect afterward.
-
-2. **Thoughtful Checkins:** Lightweight prompts that help users remember what worked well, what felt appreciated, and how relationships evolve over time.
+4. **Thoughtful Checkins:** Lightweight prompts that help users remember what worked well, what felt appreciated, and how relationships evolve over time.
 
 ## Ethical Analysis:
 
@@ -279,17 +275,16 @@ when SuggestionEngine.recordFeedback(profile, suggestion, positive)
 then CheckInPrompts.sendPrompt(profile, generatePromptBasedOnFeedback(suggestion, positive))
 ```
 
-# User Journey
+# 3. User Journey
 
-Ahmad arrives home after an outing with his new friend Basil. He learned that Basil loved the sushi place they visited and talked excitedly about Orcas, something he enjoys seeing while scuba diving. Ahmad feels he learned meaningful details today and wants to store them so he can build on this new friendship.
+Ahmad arrives home after an outing with his new friend Basil. He learned that Basil loved the sushi place they visited and talked excitedly about Orcas, which he enjoys seeing while scuba diving. Ahmad feels he learned meaningful details today and wants to store them so he can build on this new friendship.
 
 He logs into Momento and lands on the Home Page, where he sees his existing relationship profiles. He clicks “+ New Profile” and is taken to the Customization Page. There, he enters Basil’s name, chooses “Friend” as the relationship type, and clicks “Confirm.”
 
-On the newly created Relationship Profile Page, Ahmad clicks “Add Element.” He uploads a photo of an Orca and notes that Basil loves learning about Orcas and watching them when scuba diving. He adds another element: a picture of them at the sushi restaurant, and records that Basil enjoys Sashimi sushi.
+On the newly created Relationship Profile Page, Ahmad clicks “Add Memory” to log a new memory from their day together. He uploads a photo of an Orca and writes a quick note about how Basil loves learning about Orcas and watching them when scuba diving. He adds another memory: a picture of them at the sushi restaurant, and records that Basil enjoys Sashimi sushi.
 
-As the weeks go by, Basil and Ahmad hang out often. They learn more about each other, and after every time they hang out, Ahmad logs new things he learns about Basil onto Momento.
+Over the following weeks, Ahmad and Basil hang out often. After each time, Ahmad quickly logs what he learns in Momento, such as small preferences, funny moments, and inside jokes. Three months later, Basil’s birthday appears in Momento’s upcoming occasions list. Since a mutual friend, Omar, also knows Basil well, Ahmad invites him as a collaborator to help plan. The two of them add a few ideas to a shared planning checklist, like going out for sushi again and preparing a small surprise. Ahmad presses the “Brainstorming” button, selects “Gifts,” and is taken to the Recommendation Page. Using the details stored in Basil’s profile, the system suggests a thoughtful idea: a necklace with an Orca on it. 
 
-Three months later, Basil’s birthday is coming up, and Ahmad wants to give a meaningful gift. He logs back into Momento and opens Basil’s profile from the Home Page. He presses the “Brainstorming” button, selects “Gifts,” and is taken to the Recommendation Page. Using the details stored in Basil’s profile, the system suggests a thoughtful idea: a necklace with an Orca on it. 
+Ahmad loves the idea. He marks the planning item as done, and Momento updates the preparation status so he and Omar feel aligned leading up to the celebration. Through this journey, Momento helped Ahmad document the small but meaningful details that matter in his friendship with Basil and later turned those details into a personal, thoughtful gesture.
 
-Through this journey, Momento helped Ahmad document the small but meaningful details that matter in his friendship with Basil and later turned those details into a personal, thoughtful gesture.
-
+# 4. UI Sketches
