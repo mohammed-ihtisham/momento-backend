@@ -132,6 +132,7 @@ state
     a relationshipType String // friend, parent, partner, etc.
     a notes String
     a preferences set Preference
+    a memoriesUrls set Url // urls to image media of memories
 
   a set of Preferences with
     a profile Profile
@@ -151,6 +152,10 @@ actions
   updateNotes (profile: Profile, newNotes: String)
     requires profile belongs to user
     effect updates reference notes
+
+ updateMemories (profile: Profile, newMemory: String)
+  requires profile belongs to user
+  effect updates memoriesUrl with newMemory image url
 ```
 
 ### Concept: `OccasionPlanner`
@@ -182,28 +187,28 @@ actions
     effect creates a tracked upcoming occasion with createdBy = creator and collaborators = {creator}
 
   inviteCollaborator (occasion: Occasion, inviter: User, newCollaborator: User)
-    requires occasion exists and inviter ∈ occasion.collaborators
+    requires occasion exists and inviter in occasion.collaborators
     effect adds newCollaborator to occasion.collaborators
 
   addPlanningItem (occasion: Occasion, user: User, description: String)
-    requires occasion exists and user ∈ occasion.collaborators and description not empty
+    requires occasion exists and user in occasion.collaborators and description not empty
     effect creates a new PlanningItem for the occasion
 
   togglePlanningItemDone (item: PlanningItem, user: User)
-    requires item exists and user ∈ item.occasion.collaborators
+    requires item exists and user in item.occasion.collaborators
     effect flips item.done
 
   updateSharedNotes (occasion: Occasion, user: User, notes: String)
-    requires occasion exists and user ∈ occasion.collaborators
+    requires occasion exists and user in occasion.collaborators
     effect updates sharedNotes
 
   markCompleted (occasion: Occasion, user: User)
-    requires occasion exists and user ∈ occasion.collaborators
+    requires occasion exists and user in occasion.collaborators
     effect sets status to completed
 
   upcomingOccasions (user: User) : (events: set Occasion)
     requires user is authenticated
-    effect returns future occasions where user ∈ collaborators, sorted by urgency
+    effect returns future occasions where user in collaborators, sorted by urgency
 
 ```
 
@@ -273,3 +278,18 @@ sync contextAwarePrompts
 when SuggestionEngine.recordFeedback(profile, suggestion, positive)
 then CheckInPrompts.sendPrompt(profile, generatePromptBasedOnFeedback(suggestion, positive))
 ```
+
+# User Journey
+
+Ahmad arrives home after an outing with his new friend Basil. He learned that Basil loved the sushi place they visited and talked excitedly about Orcas, something he enjoys seeing while scuba diving. Ahmad feels he learned meaningful details today and wants to store them so he can build on this new friendship.
+
+He logs into Momento and lands on the Home Page, where he sees his existing relationship profiles. He clicks “+ New Profile” and is taken to the Customization Page. There, he enters Basil’s name, chooses “Friend” as the relationship type, and clicks “Confirm.”
+
+On the newly created Relationship Profile Page, Ahmad clicks “Add Element.” He uploads a photo of an Orca and notes that Basil loves learning about Orcas and watching them when scuba diving. He adds another element: a picture of them at the sushi restaurant, and records that Basil enjoys Sashimi sushi.
+
+As the weeks go by, Basil and Ahmad hang out often. They learn more about each other, and after every time they hang out, Ahmad logs new things he learns about Basil onto Momento.
+
+Three months later, Basil’s birthday is coming up, and Ahmad wants to give a meaningful gift. He logs back into Momento and opens Basil’s profile from the Home Page. He presses the “Brainstorming” button, selects “Gifts,” and is taken to the Recommendation Page. Using the details stored in Basil’s profile, the system suggests a thoughtful idea: a necklace with an Orca on it. 
+
+Through this journey, Momento helped Ahmad document the small but meaningful details that matter in his friendship with Basil and later turned those details into a personal, thoughtful gesture.
+
