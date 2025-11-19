@@ -314,3 +314,20 @@ Ahmad loves the idea. He marks the planning item as done, and Momento updates th
 <img width="748" height="427" alt="image" src="https://github.com/user-attachments/assets/69110abd-f5d7-4e18-a7df-5fad06ba7052" />
 
 <img width="748" height="411" alt="image" src="https://github.com/user-attachments/assets/eb93c82d-4fca-4baf-b629-3361945e6f72" />
+
+# 6. Design Summary
+
+All five of Momento’s main features work together to help people actually follow through on their good intentions. RelationshipProfiles give you a place to remember the little things about the people you care about, whether that be inside jokes, their favorite snacks, or important dates. OccasionPlanner then uses that info to help you plan ahead for birthdays, holidays, or any moments you want to make special, and even coordinate with others if needed. Our SuggestionEngine helps recommend thoughtful gifts or gestures when the timing is right, and CheckInPrompts will encourage small, meaningful touchpoints beyond the more significant occassions. Everything sits inside a secure UserAuth system, so private relationship details stay private.
+
+We’ve tried to balance helpfulness with respect, which means no ranking relationships, no guilt trips, just tools that make showing you care a little easier. The only open questions we still need to sort out are how much collaborators can see and how smart early suggestions should be. We’ll figure those out as we continue to build our app to make our app useful as possible while maintaining good ethics practices. 
+
+# 7. Development Plan
+
+| Milestone | Features Delivered | Concepts Involved | Team Responsibility |
+|----------|------------------|------------------|-------------------|
+| Checkpoint 1 — Minimum Viable Experience (MVP)| User Auth (Sign Up/Login), Home Dashboard, Create & View Profiles, Add/Edit Preferences | UserAuth, RelationshipProfiles | TODO: ADD |
+| Checkpoint 2 — Memories + Planning | Add Memories (photos + notes), Basic Occasion Planning (single user), Upcoming Events List | RelationshipProfiles, OccasionPlanner | TODO: ADD |
+| Final Deliverable — Collaborative Planning + Suggestions | Invite Collaborators, Checklist + Shared Notes, Simple SuggestionEngine with direct add-to-checklist | OccasionPlanner, SuggestionEngine | TODO: ADD |
+| Extra Goal (Not Confirmed) | CheckInPrompts with basic prompt logic | CheckInPrompts | Everyone |
+
+The primary technical uncertainty in our design lies in the SuggestionEngine, which must interpret loosely structured user inputs such as preferences and memories and translate them into relevant, specific gesture ideas. There is also some ambiguity in determining which suggestions are appropriate for a given occasion without overfitting to limited data. To mitigate these uncertainties, we will begin by constraining the input and suggestion space through clearly defined preference categories and a set of curated suggestion templates that directly map to those categories. Only if this baseline implementation proves reliable will we explore generating more contextually adaptive suggestions. If any part of this logic proves too difficult to implement, we will fall back to a simplified system that provides slightly less "personalized" yet still thoughtful recommendations, ensuring that the core user value of turning remembered details into meaningful action remains fully supported.
