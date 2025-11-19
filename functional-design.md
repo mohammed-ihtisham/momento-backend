@@ -288,3 +288,29 @@ Over the following weeks, Ahmad and Basil hang out often. After each time, Ahmad
 Ahmad loves the idea. He marks the planning item as done, and Momento updates the preparation status so he and Omar feel aligned leading up to the celebration. Through this journey, Momento helped Ahmad document the small but meaningful details that matter in his friendship with Basil and later turned those details into a personal, thoughtful gesture.
 
 # 4. UI Sketches
+
+## Sign Up View
+<img width="693" height="467" alt="image" src="https://github.com/user-attachments/assets/fa22c25b-915a-48eb-8273-7b520dbe2466" />
+
+## Home Dashboard — Your People & Upcoming Moments
+<img width="693" height="400" alt="image" src="https://github.com/user-attachments/assets/2e7f7608-6d03-4107-875c-9ab6d85942d6" />
+
+## Add Profile View — Create New Relationship
+<img width="715" height="480" alt="image" src="https://github.com/user-attachments/assets/62d5288a-d5f2-4ce4-910e-eaff4f088a79" />
+
+## Relationship Profile — Preferences & Moments Overview
+<img width="802" height="582" alt="image" src="https://github.com/user-attachments/assets/9806a5d8-a897-49cd-bb6f-f1cb2edb30df" />
+
+## New Memory — Add Title, Date & Description
+<img width="695" height="465" alt="image" src="https://github.com/user-attachments/assets/96cf87e3-64c9-4bac-a28c-dc3090fcd07a" />
+
+## Occasion Planning — Event Details & Countdown
+<img width="565" height="376" alt="image" src="https://github.com/user-attachments/assets/35eac41f-0d08-46c3-9abf-48ac73ef81ac" />
+
+## Suggestions View — Gift & Activity Ideas
+<img width="715" height="527" alt="image" src="https://github.com/user-attachments/assets/25a98f6f-813c-4381-96e4-c8cd78b275bc" />
+
+# 5. Visual Design Study
+<img width="748" height="427" alt="image" src="https://github.com/user-attachments/assets/69110abd-f5d7-4e18-a7df-5fad06ba7052" />
+
+<img width="748" height="411" alt="image" src="https://github.com/user-attachments/assets/eb93c82d-4fca-4baf-b629-3361945e6f72" />
