@@ -1,97 +1,86 @@
 # Problem Framing
 
-## Domain: Personalized Learning & Concept Mastery
+## Domain: Meaningful Relationship Maintenance
 
-As students, we all want to not just memorize material for exams but truly understand what we learn. Whether it’s a math formula, a chemistry reaction, or a programming concept, we’ve found that active practice helps ideas stick far better than passive review. Traditional apps like Quizlet or Khan Academy are useful, but they lack the problem-solving depth and satisfaction that come from real challenges. We want studying to feel like focused, bite-sized, and rewarding, turning small wins into lasting mastery as we "level up" in our understanding.
+Close relationships take ongoing attention, remembering what matters to people, celebrating milestones, and showing appreciation in everyday ways. Whether it’s family, long-term friends, or partners, people value staying emotionally connected over time. This domain focuses on supporting intentional care, helping people preserve shared memories, understand one another’s evolving preferences, and engage in meaningful interactions that strengthen their relationships.
 
-## Problem: Passive Review and Fragmented Learning
+## Problem: The Intention-Action Gap in Caring for Loved Ones
 
-Many students struggle to build long-term mastery of topics because most study tools promote passive review instead of active problem-solving. We jump between notes, flashcards, and videos, but rarely get to apply ideas under real challenge, leading to fragile knowledge that quickly fades. Even platforms with exercises, like Quizlet or Khan Academy, don’t adapt across subjects or track deep conceptual growth. The result is scattered study sessions across too many apps—with no single space that personalizes practice, reinforces weak spots, or shows steady, meaningful progress.
+People genuinely want to show up for the people they care about, but daily life gets in the way. Important dates sneak up, personal details are forgotten, and the pressure to be thoughtful can feel overwhelming, leading to generic gestures that don’t reflect real care. Despite strong intentions, appreciation often goes unexpressed, leaving relationships under-nurtured. Existing tools mostly offer reminders or shopping lists, but miss the deeper, more nuanced aspects of showing love: remembering shared moments, honoring personal preferences, and coordinating meaningful gestures with others.
 
 ## Evidence:
 
-- [Active learning is more effective than traditional passive learning](https://www.cmu.edu/news/stories/archives/2021/october/active-learning.html): Engaging students through interactive activities, discussions, feedback and AI-enhanced technologies resulted in improved academic performance compared to traditional lectures, lessons or readings.
+1. [**Preserving memories and relational details aligns with core human priorities**](https://www.pewresearch.org/short-reads/2023/05/26/family-time-is-far-more-important-than-other-aspects-of-life-for-most-americans/): Research shows that spending time with family is rated as more important than career, hobbies, or other life domains, indicating that tools supporting emotional closeness and memory-keeping target a widely held value.
 
-- [Initial learning using active learning methods outperform passive ones](https://pmc.ncbi.nlm.nih.gov/articles/PMC7383800/): Current literature suggests that, at least during initial learning, active learning methods outperform passive ones because of improved student engagement, self‐esteem, and attitude.
+2. [**Positive memories contribute to emotional well-being and stronger relational meaning**](https://pmc.ncbi.nlm.nih.gov/articles/PMC9205651/): Studies demonstrate that positive memories of home and family experiences are measurably linked with psychological health.
 
-- [Gamification of learning achieves more positive attitudes related to the subject](https://pmc.ncbi.nlm.nih.gov/articles/PMC10611935/#:~:text=Gamification%20improves%20the%20attitude%20about,square%20between%200.01%20and%200.06)): Gamification improved students' attitudes regarding the difficulty of the statistics in a medium effect size and statistics value and cognitive competency in a weak effect size.
+3. [**Shared and organized memories strengthen friendships and deepen bonds**](https://www.bps.org.uk/research-digest/secret-strong-friendships-interconnected-memories): Research on “transactive memory systems” shows that friendships grow stronger when people share interconnected memories, supporting the idea that a centralized relationship dashboard may reinforce social connections.
 
-- [Interactive and engaging apps an improve academic competency](https://pmc.ncbi.nlm.nih.gov/articles/PMC8800936/): Their study results showed that although academic assistance is the primary motivation behind educational apps, students also reported that interactive and engaging educational apps had improved their academic competency. Camilleri & Camilleri [23] also recommend the gamification of educational apps, as many students expressed that entertaining content also motivates them while choosing educational apps.
-
-- [Fragmented digital experience among learning apps has become an inconvenience](https://www.prnewswire.com/news-releases/new-research-report-unveils-educational-app-overload-in-k12-schools-302397684.html): In districts that have not selected a single, integrated system, most schools utilize between 10 and 15 educational apps with some student and parent component, creating a fragmented digital experience for their students and families.
+4. [**Gift giving is a major source of stress and uncertainty**](https://www.etsy.com/news/survey-says-gifting-is-stressful-but-etsys-new-gift-mode-is-here-to-help): Large-scale consumer surveys reveal that Americans find holiday and birthday gifting stressful and feel pressure to choose meaningful gifts, highlighting a persistent unmet need for tools that reduce gifting anxiety.
 
 ## Comparables:
 
-- [LeetCode • Programming challenges](https://leetcode.com): LeetCode offers an effective challenge-based model for coding practice with clear progression and feedback. However, it’s limited to computer science and doesn’t extend its approach to other academic subjects.
+- [Amazon Wish List • Product bookmarking](https://www.amazon.com): Amazon Wish List enables users to save and share desired items directly linked to retailers, making it convenient for others to purchase gifts. However, it focuses exclusively on shopping and does not support emotional context, personal memories, or thoughtful actions beyond buying products.
 
-- [Khan Academy • Structured lessons](https://www.khanacademy.org): Khan Academy provides excellent instructional videos and guided exercises. Yet, its focus leans toward passive learning and lacks user-driven or adaptive challenges that promote active problem-solving.
+- [Giftster • Shared wish lists](https://www.giftster.com): Giftster lets families create and coordinate wish lists to avoid duplicate gifts and organize holiday shopping. However, it centers on material items and one-time events, offering little support for year-round relationship care or non-purchase gestures.
 
-- [Quizlet • Flashcard learning](https://quizlet.com): Quizlet hosts a massive library of user-created flashcards, making memorization quick and accessible. However, it prioritizes recall over reasoning, offering little opportunity for conceptual application or adaptive practice.
+- [Elfster • Gift exchanges](https://www.elfster.com): Elfster simplifies seasonal gift exchanges like Secret Santa through automated assignments and shopping-based wish lists. However, it is limited to occasional events and does not help users nurture ongoing relationships or understand what loved ones value beyond physical gifts.
 
-## Features:
+- [Google Calendar • Event reminders](https://calendar.google.com): Google Calendar helps users remember important dates such as birthdays through automated notifications. However, it only alerts users when something is happening and does not provide guidance on what meaningful action to take or tools to capture personal preferences.
 
-- ***Concept Challenges:*** Instead of passively rereading notes or watching videos, users engage with bite-sized, challenge-based questions that test both understanding and recall. Each concept becomes an interactive problem that strengthens long-term retention through active application. This feature keeps learning focused, energizing, and rewarding by turning study sessions into small, meaningful wins.
+- [Love Nudge • Relationship habits](https://lovenudgeapp.com): Love Nudge encourages couples to act on each other’s preferred “love languages” through small prompts and check-ins. However, it is limited to romantic relationships, relies on a single personality framework, and lacks collaborative features or support for diverse types of care.
 
-- ***Adaptive Difficulty Ladder:*** As users progress, the app adjusts the challenge level in real time based on performance. Easier questions build confidence, while harder ones deepen understanding without overwhelming. This feature ensures that every learner moves at their own pace, maintaining motivation and consistent growth.
+## Main Features:
 
-- ***AI-Generated Practice Sets:*** Users can select a topic or weakness, and the app instantly generates personalized problem sets. Each set is tailored to reinforce concepts that need more attention and revisit them later through spaced repetition. This feature helps learners focus efficiently, making practice time more effective and goal-driven.
+1. **Personal Profile Spaces:** A customizable space for each important person in a user’s life, storing preferences, shared memories, communication style notes, and other small but meaningful details.
 
-- ***Concept Maps:*** Visual maps connect related ideas—showing how one concept leads to another across subjects. Users can see how a single formula, mechanism, or model fits into the larger picture of what they’re learning. This feature helps transform isolated facts into an integrated understanding of the subject.
+2. **Collaborative Documentation Spaces:** A shared space for multiple users to document and organize details about an activity or event that has already occurred. Participants can add memories, photos, notes, and reflections, creating a comprehensive record of the event. The space allows customization with categories or tags, making it easy to preserve, revisit, and share the experience with others.
 
-- ***Spaced Repetition Engine:*** Rather than reviewing everything at once, the app resurfaces key concepts at optimal intervals to strengthen memory. Users see what they’re about to forget—right when it matters most. This feature makes studying smarter and more sustainable by reinforcing mastery over time.
+3. **Suggestions Recommendation Engine:** A recommendation system (powered by simple logic or LLMs) that translates a person’s stored preferences and current context into brainstormed ideas of possible gifts, activities, or gestures that might be appropriate.
 
-- ***Reflection Journal:*** After each session, users can jot down what they learned, what challenged them, and what finally clicked. This feature transforms passive review into active reflection, helping learners consolidate insights and track their personal growth across subjects.
+**NOTE: The following is an additional feature we are considering but not 100% sure yet.**
 
-- ***Goal Planner:*** Users can set daily or weekly mastery goals—like completing five challenges or revisiting three key topics—and track their progress toward completion. This feature encourages consistency and builds a sense of accountability, turning learning into a sustainable routine rather than a last-minute sprint.
+4. **Thoughtful Checkins:** Lightweight prompts that help users remember what worked well, what felt appreciated, and how relationships evolve over time.
 
 ## Ethical Analysis:
 
-### **Stakeholders**
+### Stakeholders
+- **Users**: People trying to nurture their relationships, preserve memories, and give meaningful gifts.  
+- **Loved Ones**: People indirectly affected by the user’s actions and data logging.  
+- **Local Retailers & Gift-Related Businesses**: Small shops, artisans, or specialty stores that might benefit from more intentional, personalized gift purchases.
 
-1. **Observation:** Students with varying learning abilities (such as ADHD, dyslexia, or visual impairments) may find it difficult to use challenge-based systems that rely on dense text or timed interactions.
-**Design Response:** Introduce accessibility features like a *focus mode*, dyslexia-friendly fonts, adjustable timers, and full screen-reader compatibility. This ensures that every learner, regardless of ability, can engage with content meaningfully and comfortably.
+### Impacts 
+Users are impacted by whether the tool genuinely helps them feel more prepared, thoughtful, and organized—making relationship maintenance smoother and reducing stress associated with holidays or birthdays. Loved Ones are affected through the increased emotional attention they may receive; a more intentional record of memories, hobbies, and shared experiences can lead to gifts and gestures that feel more personal and meaningful. Local Retailers & Gift-Related Businesses may benefit from customers seeking more tailored, specific items rather than defaulting to generic mass-market gifts; a clearer sense of what a loved one enjoys could drive more niche or artisanal purchases and strengthen small business sales, especially around holidays.
 
-2. **Observation:** Parents or educators who view student progress could misinterpret raw scores or streaks as measures of intelligence, creating pressure or discouragement.
-**Design Response:** Replace numeric scores with qualitative mastery tiers (e.g., *Emerging → Solid → Mastered*) and provide contextual progress trends to help observers understand growth over time rather than simple performance.
+## Time
 
-3. **Observation:** Without moderation, users could misuse AI-generated question tools to create inaccurate or biased content.
-**Design Response:** Implement a feedback loop where flagged challenges are reviewed and improved through educator verification and algorithmic quality checks, maintaining fairness and trust in shared content.
+### **Short-Term (0–2 Years)**
+Users quickly gain a simple way to remember small details—likes, dislikes, moments, and gift ideas—which helps them act more intentionally in the near term. Loved ones experience slightly more personalized gestures. Local retailers may benefit from occasional, more purposeful small gift purchases triggered by the dashboard.
 
----
+### **Medium-Term (2–5 Years)**
+As use becomes routine, the dashboard shapes steady habits: users record memories more regularly, plan gifts earlier, and rely on the tool to reduce mental load around celebrations. Loved ones see more consistent thoughtfulness, and small businesses may receive more targeted purchases as users seek items that match recorded preferences.
 
-### **Time**
+### **Long-Term (5–10+ Years)**
+Over longer periods, the tool becomes part of users’ ongoing relationship maintenance, helping track changes in preferences, long-term traditions, and shared experiences. Loved ones benefit from durable patterns of attentiveness, and local retailers may see recurring, intentional gift-buying tied to annual events reflected in the dashboard.
 
-1. **Observation:** Over time, streak-based gamification may lead to burnout or anxiety if users feel penalized for missing sessions.
-**Design Response:** Add *rest days* and adaptive reminders that encourage consistency without guilt. Shifting from rigid streaks to flexible weekly goals supports long-term, sustainable learning habits.
+## Pervasiveness
 
-2. **Observation:** As learners mature, the app’s personalization algorithms may overfit to their prior data, limiting exposure to new types of problems.
-**Design Response:** Build transparency into AI recommendations through a “Why this question?” button that explains suggestion logic and encourages users to explore beyond algorithmic comfort zones.
+### Global Reach and Cultural Adaptation
+If broadly adopted across diverse geographies, the dashboard could be tailored to fit local cultural norms and practices. In North America, it might emphasize birthdays and holidays, while in East Asia, it could highlight festivals and family-oriented events. In rural areas with limited connectivity, offline-first features or lightweight mobile versions could ensure accessibility, making the app valuable across varied settings.
 
-3. **Observation:** Heavy reliance on AI-generated practice could make learners dependent on the system instead of developing self-guided study habits.
-**Design Response:** Introduce a *self-author mode* where users create or edit their own challenges, prompting creativity and critical thinking while gradually building independence from AI support.
+### Influence on Social Interactions
+As use spreads from small groups to thousands or millions, the app could normalize intentional relationship management and thoughtful gift-giving. Users may begin sharing experiences and recommendations, strengthening social networks. Large-scale adoption could encourage community-building, but also create pressure to maintain perfect records or conform to others’ expectations, which would need careful design balance.
 
----
+### Economic and Local Business Effects
+Widespread adoption could increase demand for personalized gifts, benefiting local retailers, artisans, and small businesses. Users seeking meaningful, tailored items could drive niche markets and encourage sustainable shopping practices. Conversely, if the app promotes mass-market recommendations or defaults to popular trends, it may inadvertently favor large-scale retailers over small ones, requiring design attention to support local economies.
 
-### **Pervasiveness**
+## Values
 
-1. **Observation:** If widely adopted, the app could unintentionally contribute to global educational homogenization—students everywhere learning through the same examples and cultural contexts.
-**Design Response:** Offer regional content settings with localized examples, units, and culturally relevant references to ensure that global adoption still respects local diversity.
+### Autonomy and Self-Efficacy
+The app supports autonomy by allowing users to decide what details to record about their relationships and how to engage with loved ones. Users gain self-efficacy through proactive memory-keeping and intentional gift planning, giving them confidence in managing social connections. Features like customizable dashboards and optional reminders enhance this sense of control without enforcing rigid behavior.
 
-2. **Observation:** Students in low-bandwidth or rural areas may be excluded if the app depends on a constant internet connection.
-**Design Response:** Enable offline downloadable challenge sets and lightweight “text-first” study modes so learners can practice anywhere without connectivity barriers.
+### Community and Inclusion
+By helping users maintain thoughtful interactions, the app fosters stronger social bonds and a sense of belonging. Inclusive design ensures people from different cultural and social backgrounds can capture and respect diverse traditions, hobbies, and preferences. Sharing memories and experiences can reinforce empathy and connection, making relationships richer and more inclusive.
 
-3. **Observation:** As the user base grows, algorithms might converge toward the median learner profile, leaving advanced or struggling users underserved.
-**Design Response:** Allow full customization of pacing, difficulty, and review intervals so each user can tailor their learning experience to their own level and goals.
-
----
-
-### **Values**
-
-**Observation:** The app promotes autonomy and mastery, but gamified elements like XP and streaks could shift focus from learning to score-chasing.
-**Design Response:** Redesign achievements to celebrate perseverance and insight instead of speed—awards such as *Concept Builder* or *Deep Thinker* emphasize depth and effort over quantity.
-
-**Observation:** Continuous data collection raises privacy concerns around academic profiling or third-party data use.
-**Design Response:** Store all progress data locally or with encryption, anonymize aggregated analytics, and allow users to export or permanently delete their data at any time.
-
-**Observation:** The adaptive and accessible design can meaningfully expand educational equity for students without institutional support.
-**Design Response:** Keep core features—like challenge practice, reflection, and spaced repetition—free and ad-free to ensure that personalized, high-quality learning remains accessible to all.
+### Fairness and Support for Local Economies
+The platform can encourage fairness by highlighting a wide range of gift options beyond mass-market defaults, benefiting local retailers and artisans. This supports ethical consumption and gives users access to meaningful, personalized items. At the same time, design choices need to balance guidance with avoiding unintentional biases toward certain products or communities.
