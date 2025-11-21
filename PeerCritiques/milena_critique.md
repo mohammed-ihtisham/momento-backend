@@ -1,0 +1,5 @@
+**I like** the concept design breakdown for CourseConnect. Reading through the different concepts shows the design much more clearly to me. I also really enjoyed the consideration the team has provided for privacy instances where you might not want to share your future schedule with everyone. The UI sketches were also really clean to look at in terms of understanding the visualization for the app so overall good job!
+
+**I wish** I could see the difference between course connect and a shared google calendar. I think if the entire process of user's user journey was described in the pitch video this would make this issue clearer.
+
+**I wonder** if the scheduling page UI sketch could be split up or made more concise. From the UI sketches, I feel like it seems a bit overwhelming for a user at first so it might be something worth considering. I also wonder how scheduling conflicts with the course catalog itself are handled. I know that classes like 6.1040 for example have less lectures/class time required in person so how would this be taken into account on the reflected schedules.
