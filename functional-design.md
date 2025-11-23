@@ -88,191 +88,779 @@ By helping users maintain thoughtful interactions, the app fosters stronger soci
 The platform can encourage fairness by highlighting a wide range of gift options beyond mass-market defaults, benefiting local retailers and artisans. This supports ethical consumption and gives users access to meaningful, personalized items. At the same time, design choices need to balance guidance with avoiding unintentional biases toward certain products or communities.
 
 # 2. Concept Design
+
 ### Concept: `UserAuth`
-```markdown
-concept UserAuth [User]
-purpose authenticate users so their personal relationship data and contributions remain private and secure
-principle users must be signed in to view, add, or edit personal relational information
+* **purpose**: To securely verify a user's identity based on credentials.
+* **principle**: If you register with a unique username and a password, and later provide the same credentials to log in, you will be successfully identified as that user.
+* **state**:
+    * a set of `User`s with
+        * a `username` String (unique)
+        * a `passwordHash` String
+* **actions**:
+    * `register (username: String, password: String): (user: User)`
+        * **requires**: no User exists with the given `username`.
+        * **effects**: creates a new User `u`; sets their `username` and a hash of their `password`; returns `u` as `user`.
+    * `register (username: String, password: String): (error: String)`
+        * **requires**: a User already exists with the given `username`.
+        * **effects**: returns an error message.
+    * `login (username: String, password: String): (user: User)`
+        * **requires**: a User exists with the given `username` and the `password` matches their `passwordHash`.
+        * **effects**: returns the matching User `u` as `user`.
+    * `login (username: String, password: String): (error: String)`
+        * **requires**: no User exists with the given `username` or the `password` does not match.
+        * **effects**: returns an error message.
+* **queries**:
+    * `_getUserByUsername (username: String): (user: User)`
+        * **requires**: a User with the given `username` exists.
+        * **effects**: returns the corresponding User.
 
-state
-  a set of Users with
-    a email String
-    a passwordHash String
-    a displayName String
+---
 
-actions
-  register (email: String, password: String, displayName: String) : (user: User)
-    requires email is valid and not already in system
-    effect creates a new user account
+### Concept: `Sessioning`
+* **purpose**: To maintain a user's logged-in state across multiple requests without re-sending credentials.
+* **principle**: After a user is authenticated, a session is created for them. Subsequent requests using that session's ID are treated as being performed by that user, until the session is deleted (logout).
+* **state**:
+    * a set of `Session`s with
+        * a `user` User
+* **actions**:
+    * `create (user: User): (session: Session)`
+        * **requires**: true.
+        * **effects**: creates a new Session `s`; associates it with the given `user`; returns `s` as `session`.
+    * `delete (session: Session): ()`
+        * **requires**: the given `session` exists.
+        * **effects**: removes the session `s`.
+* **queries**:
+    * `_getUser (session: Session): (user: User)`
+        * **requires**: the given `session` exists.
+        * **effects**: returns the user associated with the session.
 
-  login (email: String, password: String) : (user: User)
-    requires credentials match
-    effect authenticates user and grants access to personal data
+---
 
-  logout (user: User)
-    requires user is authenticated
-    effect ends session
+### Concept: `Profile`
+* **purpose**: store basic user information: name and email
+* **principle**: If a user sets their name and email, then other users or the system can view these details when interacting with that user's profile.
+* **state**:
+    * a set of Profiles with
+        * a `user` User
+        * a `name` String
+        * a `email` String
+* **actions**:
+    * `createProfile (user: User, name: String, email: String): (profile: Profile)`
+        * **requires**: user exists; no Profile already exists for `user`.
+        * **effects**: creates a new Profile `p`; sets `user`, `name`, and `email`; returns `p`.
+    * `updateName (user: User, name: String)`
+        * **requires**: user exists; a Profile exists for `user`.
+        * **effects**: updates the `name` of the Profile.
+    * `updateEmail (user: User, email: String)`
+        * **requires**: user exists; a Profile exists for `user`.
+        * **effects**: updates the `email` of the Profile.
+    * `deleteProfile (user: User)`
+        * **requires**: user exists; a Profile exists for `user`.
+        * **effects**: removes the Profile.
+* **queries**:
+    * `_getProfile (user: User): (name: String, email: String)`
+        * **requires**: user exists; Profile exists.
+        * **effects**: returns `name` and `email`.
+    * `_getName (user: User): (name: String)`
+        * **requires**: user exists; Profile exists.
+        * **effects**: returns the user's `name`.
+    * `_getEmail (user: User): (email: String)`
+        * **requires**: user exists; Profile exists.
+        * **effects**: returns the user's `email`.
 
-```
+---
 
-### Concept: `RelationshipProfiles`
-```markdown
-concept RelationshipProfiles [User]
-purpose help users remember details about people they care about: likes, dislikes, shared context
-principle each profile centers on personalization, not comparison or “scores”
+### Concept: `Relationship`
+* **purpose**: track the people that a user cares about by attributing a relationship type to each person
+* **principle**: If a user creates a relationship with a person by providing a name and relationship type, they can later retrieve and manage that relationship.
+* **state**:
+    * a set of Relationships with
+        * an `owner` User
+        * a `name` String
+        * a `relationshipType` String
+* **actions**:
+    * `createRelationship (owner: User, name: String, relationshipType: String): (relationship: Relationship)`
+        * **requires**: owner exists; name & relationshipType not empty; no duplicate name for that owner.
+        * **effects**: creates a Relationship `r`; returns `r`.
+    * `updateRelationship (relationship: Relationship, name?: String, relationshipType?: String): (relationship: Relationship)`
+        * **requires**: relationship exists; valid update; no conflict if name changes.
+        * **effects**: updates fields provided; returns updated relationship.
+    * `deleteRelationship (relationship: Relationship)`
+        * **requires**: relationship exists.
+        * **effects**: removes `relationship`.
+* **queries**:
+    * `_getRelationship (relationship: Relationship): (owner: User, name: String, relationshipType: String)`
+        * **requires**: relationship exists.
+        * **effects**: returns owner, name, type.
+    * `_getRelationships (owner: User): (relationship: Relationship, name: String, relationshipType: String)`
+        * **requires**: owner exists.
+        * **effects**: returns all relationships for owner.
+    * `_getRelationshipByName (owner: User, name: String): (relationship: Relationship, relationshipType: String)`
+        * **requires**: owner exists; name valid; exact match exists.
+        * **effects**: returns relationship & type.
 
-state
-  a set of Profiles with
-    a owner User
-    a personName String
-    a relationshipType String // friend, parent, partner, etc.
-    a notes String
-    a preferences set Preference
-    a memoriesUrls set Url // urls to image media of memories
+---
 
-  a set of Preferences with
-    a profile Profile
-    a category String // food, hobbies, communication style
-    a preferenceDetail String
-    a sentiment String // likes, dislikes
+### Concept: `Notes`
+* **purpose**: allow users to store, organize, and retrieve textual information associated with relationships
+* **principle**: If a user creates a note with a title and content for a relationship, they can later retrieve and update it.
+* **state**:
+    * a set of Notes with
+        * an `owner` User
+        * a `relationship` Relationship
+        * a `title` String
+        * a `content` String
+* **actions**:
+    * `createNote (owner: User, relationship: Relationship, title: String, content: String): (note: Note)`
+        * **requires**: owner & relationship exist; unique title for that relationship.
+        * **effects**: creates Note `n`; returns it.
+    * `updateNote (note: Note, title?: String, content?: String): (note: Note)`
+        * **requires**: note exists; valid update; no title conflict.
+        * **effects**: updates title/content; returns note.
+    * `deleteNote (note: Note)`
+        * **requires**: note exists.
+        * **effects**: removes note.
+* **queries**:
+    * `_getNote (note: Note): (owner: User, relationship: Relationship, title: String, content: String)`
+        * **requires**: note exists.
+        * **effects**: returns metadata & content.
+    * `_getNotes (owner: User): (note: Note, relationship: Relationship, title: String, content: String)`
+        * **requires**: owner exists.
+        * **effects**: returns all notes for owner.
+    * `_getNotesByRelationship (owner: User, relationship: Relationship): (note: Note, title: String, content: String)`
+        * **requires**: owner & relationship exist.
+        * **effects**: returns notes for that relationship.
+    * `_getNoteByTitle (owner: User, relationship: Relationship, title: String): (note: Note, content: String)`
+        * **requires**: valid owner & relationship; exact title match.
+        * **effects**: returns matching note & content.
 
-actions
-  createProfile (user: User, personName: String, relationshipType: String)
-    requires user is authenticated and personName not empty
-    effect adds a new profile tied to user
+---
 
-  addPreference (profile: Profile, category: String, preferenceDetail: String, sentiment: String)
-    requires profile exists and sentiment in {likes, dislikes}
-    effect records an actionable preference
+### Concept: `MemoryGallery`
+* **purpose**: store a list of images associated with relationships the user has
+* **principle**: If a user adds an image tied to a relationship, they can view and remove it later.
+* **state**:
+    * a set of Images with
+        * an `owner` User
+        * a `relationship` Relationship
+        * an `imageUrl` String
+        * an `uploadDate` Date
+* **actions**:
+    * `addImage (owner: User, relationship: Relationship, imageUrl: String): (uploadDate: Date)`
+        * **requires**: valid owner; relationship exists; unique imageUrl.
+        * **effects**: adds image; returns timestamp.
+    * `removeImage (owner: User, imageUrl: String)`
+        * **requires**: image exists and owner matches.
+        * **effects**: deletes image entry.
+* **queries**:
+    * `_getImages (owner: User): (imageUrl: String, relationship: Relationship, uploadDate: Date)`
+        * **requires**: owner exists.
+        * **effects**: returns all images for owner.
+    * `_getImagesByRelationship (owner: User, relationship: Relationship): (imageUrl: String, uploadDate: Date)`
+        * **requires**: owner & relationship exist.
+        * **effects**: returns images tied to a relationship.
 
-  updateNotes (profile: Profile, newNotes: String)
-    requires profile belongs to user
-    effect updates reference notes
-
- updateMemories (profile: Profile, newMemory: String)
-  requires profile belongs to user
-  effect updates memoriesUrl with newMemory image url
-```
-
-### Concept: `OccasionPlanner`
-```markdown
-concept OccasionPlanner [User, Profile]
-purpose help users collaboratively prepare for birthdays, milestones, or stressful periods with timely, shared planning
-principle prevents panic-buying or last-minute improvisation by letting multiple people coordinate thoughtful actions for the same person
-
-state
-  a set of Occasions with
-    a profile Profile
-    a createdBy User
-    a collaborators set User
-    a occasionType String // birthday, milestone, personal challenge
-    a date Date
-    a preparationWindow Number // days before event to surface suggestions
-    a status String // planned, completed
-    a sharedNotes String
-
-  a set of PlanningItems with
-    a occasion Occasion
-    a addedBy User
-    a description String
-    a done Flag
-
-actions
-  addOccasion (creator: User, profile: Profile, type: String, date: Date, window: Number)
-    requires creator is authenticated and date >= today and window >= 0
-    effect creates a tracked upcoming occasion with createdBy = creator and collaborators = {creator}
-
-  inviteCollaborator (occasion: Occasion, inviter: User, newCollaborator: User)
-    requires occasion exists and inviter in occasion.collaborators
-    effect adds newCollaborator to occasion.collaborators
-
-  addPlanningItem (occasion: Occasion, user: User, description: String)
-    requires occasion exists and user in occasion.collaborators and description not empty
-    effect creates a new PlanningItem for the occasion
-
-  togglePlanningItemDone (item: PlanningItem, user: User)
-    requires item exists and user in item.occasion.collaborators
-    effect flips item.done
-
-  updateSharedNotes (occasion: Occasion, user: User, notes: String)
-    requires occasion exists and user in occasion.collaborators
-    effect updates sharedNotes
-
-  markCompleted (occasion: Occasion, user: User)
-    requires occasion exists and user in occasion.collaborators
-    effect sets status to completed
-
-  upcomingOccasions (user: User) : (events: set Occasion)
-    requires user is authenticated
-    effect returns future occasions where user in collaborators, sorted by urgency
-
-```
+---
 
 ### Concept: `SuggestionEngine`
-```markdown
-concept SuggestionEngine [User, Profile, Preference, Occasion]
-purpose translate personal details into meaningful, timely gestures
-principle prioritize specificity and emotional resonance over generic e-commerce links
+* **purpose**: generate and store suggestions for users based on contextual information
+* **principle**: If the system processes user context, it can generate actionable suggestions and store them.
+* **state**:
+    * a set of Suggestions with
+        * an `owner` User
+        * a `content` String
+        * a `generatedAt` Date
+* **actions**:
+    * `generateSuggestion (owner: User, context: SuggestionContext): (suggestion: Suggestion, content: String)`
+        * **requires**: owner exists; context valid.
+        * **effects**: generates and stores suggestion; returns suggestion & content.
+* **queries**:
+    * `_getSuggestions (owner: User): (suggestion: Suggestion, content: String, generatedAt: Date)`
+        * **requires**: owner exists.
+        * **effects**: returns suggestions for owner.
 
-state
-  a set of Suggestions with
-    a profile Profile
-    a gesture String // "bring a favorite snack", "plan a coffee walk"
-    a confidenceScore Number
+---
 
-actions
-  generateSuggestions (profile: Profile) : (suggestions: set Suggestion)
-    requires profile exists
-    effect produces gesture ideas derived from preferences and memories
+### Concept: `Occasion`
+* **purpose**: define a specific event or occasion with minimal information: person, occasion type, and date
+* **principle**: If a user creates an occasion, they can manage and later retrieve it.
+* **state**:
+    * a set of Occasions with
+        * an `owner` User
+        * a `person` String
+        * an `occasionType` String
+        * a `date` String
+* **actions**:
+    * `createOccasion (owner: User, person: String, occasionType: String, date: String): (occasion: Occasion)`
+        * **requires**: valid inputs; date in ISO format.
+        * **effects**: creates Occasion `o`; returns it.
+    * `updateOccasion (occasion: Occasion, person?: String, occasionType?: String, date?: String): (occasion: Occasion)`
+        * **requires**: occasion exists; valid update.
+        * **effects**: updates fields; returns occasion.
+    * `deleteOccasion (occasion: Occasion)`
+        * **requires**: occasion exists.
+        * **effects**: removes it.
+* **queries**:
+    * `_getOccasion (occasion: Occasion): (owner: User, person: String, occasionType: String, date: String)`
+        * **requires**: exists.
+        * **effects**: returns data.
+    * `_getOccasions (owner: User): (occasion: Occasion, person: String, occasionType: String, date: String)`
+        * **requires**: owner exists.
+        * **effects**: returns all occasions.
+    * `_getOccasionsByPerson (owner: User, person: String): (occasion: Occasion, occasionType: String, date: String)`
+        * **requires**: valid inputs.
+        * **effects**: returns filtered set.
+    * `_getOccasionsByDate (owner: User, date: String): (occasion: Occasion, person: String, occasionType: String)`
+        * **requires**: valid date.
+        * **effects**: returns by date.
 
-  refineForOccasion (occasion: Occasion) : (suggestions: set Suggestion)
-    requires occasion exists
-    effect filters suggestions based on date urgency and relevant context
+---
 
-  recordFeedback (profile: Profile, suggestion: Suggestion, positive: Boolean)
-    requires suggestion exists
-    effect updates confidence model for future recommendations
-```
+### Concept: `Collaborators`
+* **purpose**: maintain a list of people working on a project
+* **principle**: Users can add/remove collaborators at any time.
+* **state**:
+    * a set of Users
+* **actions**:
+    * `addCollaborator (user: User)`
+        * **requires**: user exists; not already in set.
+        * **effects**: adds user.
+    * `removeCollaborator (user: User)`
+        * **requires**: user exists; currently a collaborator.
+        * **effects**: removes user.
+* **queries**:
+    * `_getCollaborators (): (user: User)`
+        * **requires**: none.
+        * **effects**: returns all collaborators.
+    * `_hasCollaborator (user: User): (hasCollaborator: Boolean)`
+        * **requires**: user exists.
+        * **effects**: returns membership status.
 
-### Concept: `CheckInPrompts`
-```markdown
-concept CheckInPrompts [User, Profile]
-purpose encourage mindful presence and emotional awareness over time
-principle help users express care not just during occasions but on regular days
+---
 
-state
-  a set of Prompts with
-    a profile Profile
-    a timestamp Date
-    a question String
-    a actionTaken String optional
+### Concept: `Task`
+* **purpose**: define tasks that users can create and manage
+* **principle**: A user can create a task and later update or delete it.
+* **state**:
+    * a set of Tasks with
+        * an `owner` User
+        * a `description` String
+* **actions**:
+    * `createTask (owner: User, description: String): (task: Task)`
+        * **requires**: owner exists; description not empty.
+        * **effects**: creates Task `t`; returns it.
+    * `updateTaskDescription (task: Task, description: String): (task: Task)`
+        * **requires**: task exists.
+        * **effects**: updates description; returns task.
+    * `deleteTask (task: Task)`
+        * **requires**: task exists.
+        * **effects**: removes task.
+* **queries**:
+    * `_getTask (task: Task): (owner: User, description: String)`
+        * **requires**: task exists.
+        * **effects**: returns owner & description.
+    * `_getTasks (owner: User): (task: Task, description: String)`
+        * **requires**: owner exists.
+        * **effects**: returns tasks for owner.
 
-actions
-  sendPrompt (profile: Profile, question: String)
-    requires profile exists
-    effect notifies user with a reflection question
+---
 
-  logCheckInAction (prompt: Prompt, action: String)
-    requires prompt exists
-    effect records a small follow-up action
+### Concept: `TaskChecklist`
+* **purpose**: track and manage the completion status of tasks in a checklist
+* **principle**: If tasks are added or marked complete, the checklist reflects this state.
+* **state**:
+    * a set of ChecklistEntries with
+        * an `owner` User
+        * a `task` Task
+        * a `completed` Boolean
+* **actions**:
+    * `addTask (owner: User, task: Task): (entry: ChecklistEntry)`
+        * **requires**: valid owner/task; unique entry.
+        * **effects**: creates entry; completed=false; returns entry.
+    * `removeTask (owner: User, task: Task)`
+        * **requires**: entry exists.
+        * **effects**: removes entry.
+    * `markComplete (owner: User, task: Task)`
+        * **requires**: entry exists.
+        * **effects**: sets completed=true.
+    * `markIncomplete (owner: User, task: Task)`
+        * **requires**: entry exists.
+        * **effects**: sets completed=false.
+* **queries**:
+    * `_getChecklistEntry (owner: User, task: Task): (completed: Boolean)`
+        * **requires**: entry exists.
+        * **effects**: returns completion status.
+    * `_getChecklist (owner: User): (task: Task, completed: Boolean)`
+        * **requires**: owner exists.
+        * **effects**: returns all entries.
+    * `_getCompletedTasks (owner: User): (task: Task)`
+        * **requires**: owner exists.
+        * **effects**: returns tasks where completed=true.
+    * `_getIncompleteTasks (owner: User): (task: Task)`
+        * **requires**: owner exists.
+        * **effects**: returns tasks where completed=false.
 
-  getHistory (profile: Profile) : (prompts: set Prompt)
-    requires profile exists
-    effect returns prompts associated with profile sorted by timestamp
-
-```
 
 ## Synchronizations
 ```markdown
-sync upcomingCareMoments
-when OccasionPlanner.upcomingOccasions(user) returns events
-then SuggestionEngine.refineForOccasion(occasion) 
-     where occasion = soonest(events)
+sync RegisterRequest
+when Requesting.request(path: "/UserAuthentication/register", username, password) returns request
+then UserAuthentication.register(username, password)
+
+sync RegisterResponseSuccess
+when Requesting.request(path: "/UserAuthentication/register") returns request
+     and UserAuthentication.register() returns user
+then Requesting.respond(request, user)
+
+sync RegisterResponseError
+when Requesting.request(path: "/UserAuthentication/register") returns request
+     and UserAuthentication.register() returns error
+then Requesting.respond(request, error)
 
 
-sync contextAwarePrompts
-when SuggestionEngine.recordFeedback(profile, suggestion, positive)
-then CheckInPrompts.sendPrompt(profile, generatePromptBasedOnFeedback(suggestion, positive))
+sync CreateProfileOnRegister
+when UserAuthentication.register() returns user
+then Profile.createProfile(user, name: "", email: "")
+
+
+sync LoginRequest
+when Requesting.request(path: "/login", username, password) returns request
+then UserAuthentication.login(username, password)
+
+sync LoginSuccessCreatesSession
+when UserAuthentication.login() returns user
+then Sessioning.create(user)
+
+sync LoginResponseSuccess
+when Requesting.request(path: "/login") returns request
+     and UserAuthentication.login() returns user
+     and Sessioning.create(user) returns session
+then Requesting.respond(request, session)
+
+sync LoginResponseError
+when Requesting.request(path: "/login") returns request
+     and UserAuthentication.login() returns error
+then Requesting.respond(request, error)
+
+
+sync LogoutRequest
+when Requesting.request(path: "/logout", session) returns request
+     where in Sessioning: _getUser(session) gets user
+then Sessioning.delete(session)
+
+sync LogoutResponse
+when Requesting.request(path: "/logout") returns request
+     and Sessioning.delete() returns ()
+then Requesting.respond(request, status: "logged_out")
+
+
+sync CreateRelationshipRequest
+when Requesting.request(path: "/Relationship/createRelationship", session, name, relationshipType) returns request
+     and in Sessioning: _getUser(session) gets user
+then Relationship.createRelationship(owner: user, name, relationshipType)
+
+sync CreateRelationshipResponse
+when Requesting.request(path: "/Relationship/createRelationship") returns request
+     and Relationship.createRelationship() returns relationship
+then Requesting.respond(request, relationship)
+
+
+sync UpdateRelationshipRequest
+when Requesting.request(path: "/Relationship/updateRelationship", session, relationship, name?, relationshipType?) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then Relationship.updateRelationship(relationship, name, relationshipType)
+
+sync UpdateRelationshipResponse
+when Requesting.request(path: "/Relationship/updateRelationship") returns request
+     and Relationship.updateRelationship() returns relationship
+then Requesting.respond(request, relationship)
+
+
+sync DeleteRelationshipRequest
+when Requesting.request(path: "/Relationship/deleteRelationship", session, relationship) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then Relationship.deleteRelationship(relationship)
+
+sync DeleteRelationshipResponse
+when Requesting.request(path: "/Relationship/deleteRelationship") returns request
+     and Relationship.deleteRelationship() returns ()
+then Requesting.respond(request, status: "deleted")
+
+
+sync CreateNoteRequest
+when Requesting.request(path: "/Notes/createNote", session, relationship, title, content) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then Notes.createNote(owner: user, relationship, title, content)
+
+sync CreateNoteResponse
+when Requesting.request(path: "/Notes/createNote") returns request
+     and Notes.createNote() returns note
+then Requesting.respond(request, note)
+
+
+sync UpdateNoteRequest
+when Requesting.request(path: "/Notes/updateNote", session, note, title?, content?) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Notes: _getNote(note) gets owner
+     and owner equals user
+then Notes.updateNote(note, title, content)
+
+sync UpdateNoteResponse
+when Requesting.request(path: "/Notes/updateNote") returns request
+     and Notes.updateNote() returns note
+then Requesting.respond(request, note)
+
+
+sync DeleteNoteRequest
+when Requesting.request(path: "/Notes/deleteNote", session, note) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Notes: _getNote(note) gets owner
+     and owner equals user
+then Notes.deleteNote(note)
+
+sync DeleteNoteResponse
+when Requesting.request(path: "/Notes/deleteNote") returns request
+     and Notes.deleteNote() returns ()
+then Requesting.respond(request, status: "deleted")
+
+
+sync AddImageRequest
+when Requesting.request(path: "/MemoryGallery/addImage", session, relationship, imageUrl) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then MemoryGallery.addImage(owner: user, relationship, imageUrl)
+
+sync AddImageResponse
+when Requesting.request(path: "/MemoryGallery/addImage") returns request
+     and MemoryGallery.addImage() returns uploadDate
+then Requesting.respond(request, uploadDate)
+
+
+sync RemoveImageRequest
+when Requesting.request(path: "/MemoryGallery/removeImage", session, imageUrl) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in MemoryGallery: _getImages(owner: user) gets imageUrl
+then MemoryGallery.removeImage(owner: user, imageUrl)
+
+sync RemoveImageResponse
+when Requesting.request(path: "/MemoryGallery/removeImage") returns request
+     and MemoryGallery.removeImage() returns ()
+then Requesting.respond(request, status: "removed")
+
+
+sync CreateOccasionRequest
+when Requesting.request(path: "/Occasion/createOccasion", session, person, occasionType, date) returns request
+     and in Sessioning: _getUser(session) gets user
+then Occasion.createOccasion(owner: user, person, occasionType, date)
+
+sync CreateOccasionResponse
+when Requesting.request(path: "/Occasion/createOccasion") returns request
+     and Occasion.createOccasion() returns occasion
+then Requesting.respond(request, occasion)
+
+
+sync UpdateOccasionRequest
+when Requesting.request(path: "/Occasion/updateOccasion", session, occasion, person?, occasionType?, date?) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Occasion: _getOccasion(occasion) gets owner
+     and owner equals user
+then Occasion.updateOccasion(occasion, person, occasionType, date)
+
+sync UpdateOccasionResponse
+when Requesting.request(path: "/Occasion/updateOccasion") returns request
+     and Occasion.updateOccasion() returns occasion
+then Requesting.respond(request, occasion)
+
+
+sync DeleteOccasionRequest
+when Requesting.request(path: "/Occasion/deleteOccasion", session, occasion) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Occasion: _getOccasion(occasion) gets owner
+     and owner equals user
+then Occasion.deleteOccasion(occasion)
+
+sync DeleteOccasionResponse
+when Requesting.request(path: "/Occasion/deleteOccasion") returns request
+     and Occasion.deleteOccasion() returns ()
+then Requesting.respond(request, status: "deleted")
+
+
+sync CreateTaskForOccasionRequest
+when Requesting.request(path: "/Occasion/createTaskForOccasion", session, occasion, description) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Occasion: _getOccasion(occasion) gets owner
+     and owner equals user
+then Task.createTask(owner: user, description)
+
+sync CreateTaskForOccasionAutoAdd
+when Requesting.request(path: "/Occasion/createTaskForOccasion") returns request
+     and Task.createTask() returns task
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist.addTask(owner: user, task)
+
+sync CreateTaskForOccasionResponse
+when Requesting.request(path: "/Occasion/createTaskForOccasion") returns request
+     and Task.createTask() returns task
+     and TaskChecklist.addTask() returns entry
+then Requesting.respond(request, task, entry)
+
+
+sync CreateTaskRequest
+when Requesting.request(path: "/Task/createTask", session, description) returns request
+     and in Sessioning: _getUser(session) gets user
+then Task.createTask(owner: user, description)
+
+sync CreateTaskResponse
+when Requesting.request(path: "/Task/createTask") returns request
+     and Task.createTask() returns task
+then Requesting.respond(request, task)
+
+
+sync UpdateTaskRequest
+when Requesting.request(path: "/Task/updateTaskDescription", session, task, description) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Task: _getTask(task) gets owner
+     and owner equals user
+then Task.updateTaskDescription(task, description)
+
+sync UpdateTaskResponse
+when Requesting.request(path: "/Task/updateTaskDescription") returns request
+     and Task.updateTaskDescription() returns task
+then Requesting.respond(request, task)
+
+
+sync DeleteTaskRequest
+when Requesting.request(path: "/Task/deleteTask", session, task) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Task: _getTask(task) gets owner
+     and owner equals user
+then Task.deleteTask(task)
+
+sync DeleteTaskResponse
+when Requesting.request(path: "/Task/deleteTask") returns request
+     and Task.deleteTask() returns ()
+then Requesting.respond(request, status: "deleted")
+
+
+sync AddTaskToChecklistRequest
+when Requesting.request(path: "/TaskChecklist/addTask", session, task) returns request
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist.addTask(owner: user, task)
+
+sync AddTaskToChecklistResponse
+when Requesting.request(path: "/TaskChecklist/addTask") returns request
+     and TaskChecklist.addTask() returns entry
+then Requesting.respond(request, entry)
+
+
+sync RemoveTaskFromChecklistRequest
+when Requesting.request(path: "/TaskChecklist/removeTask", session, task) returns request
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist.removeTask(owner: user, task)
+
+sync RemoveTaskFromChecklistResponse
+when Requesting.request(path: "/TaskChecklist/removeTask") returns request
+     and TaskChecklist.removeTask() returns ()
+then Requesting.respond(request, status: "removed")
+
+
+sync MarkTaskCompleteRequest
+when Requesting.request(path: "/TaskChecklist/markComplete", session, task) returns request
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist.markComplete(owner: user, task)
+
+sync MarkTaskCompleteResponse
+when Requesting.request(path: "/TaskChecklist/markComplete") returns request
+     and TaskChecklist.markComplete() returns ()
+then Requesting.respond(request, status: "completed")
+
+
+sync MarkTaskIncompleteRequest
+when Requesting.request(path: "/TaskChecklist/markIncomplete", session, task) returns request
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist.markIncomplete(owner: user, task)
+
+sync MarkTaskIncompleteResponse
+when Requesting.request(path: "/TaskChecklist/markIncomplete") returns request
+     and TaskChecklist.markIncomplete() returns ()
+then Requesting.respond(request, status: "incomplete")
+
+
+sync AddCollaboratorRequest
+when Requesting.request(path: "/Collaborators/addCollaborator", session, collaboratorUser) returns request
+     and in Sessioning: _getUser(session) gets user
+then Collaborators.addCollaborator(user: collaboratorUser)
+
+sync AddCollaboratorResponse
+when Requesting.request(path: "/Collaborators/addCollaborator") returns request
+     and Collaborators.addCollaborator() returns ()
+then Requesting.respond(request, status: "added")
+
+
+sync RemoveCollaboratorRequest
+when Requesting.request(path: "/Collaborators/removeCollaborator", session, collaboratorUser) returns request
+     and in Sessioning: _getUser(session) gets user
+then Collaborators.removeCollaborator(user: collaboratorUser)
+
+sync RemoveCollaboratorResponse
+when Requesting.request(path: "/Collaborators/removeCollaborator") returns request
+     and Collaborators.removeCollaborator() returns ()
+then Requesting.respond(request, status: "removed")
+
+
+sync GetCollaboratorsRequest
+when Requesting.request(path: "/Collaborators/_getCollaborators", session) returns request
+     and in Sessioning: _getUser(session) gets user
+then Collaborators._getCollaborators()
+
+sync GetCollaboratorsResponse
+when Requesting.request(path: "/Collaborators/_getCollaborators") returns request
+     and Collaborators._getCollaborators() returns user
+then Requesting.respond(request, collaborators: collected from user)
+
+
+sync GenerateSuggestionRequest
+when Requesting.request(path: "/SuggestionEngine/generateSuggestion", session, relationship) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner, name, relationshipType
+     and owner equals user
+     and in Notes: _getNotesByRelationship(owner, relationship) gets note, title, content
+     and in MemoryGallery: _getImagesByRelationship(owner, relationship) gets imageUrl, uploadDate
+then SuggestionEngine.generateSuggestion(owner: user, context: suggestionContext)
+
+sync GenerateSuggestionResponse
+when Requesting.request(path: "/SuggestionEngine/generateSuggestion") returns request
+     and SuggestionEngine.generateSuggestion() returns suggestion, content
+then Requesting.respond(request, suggestion, content)
+
+
+sync GenerateSuggestionForOccasionRequest
+when Requesting.request(path: "/SuggestionEngine/generateSuggestionForOccasion", session, occasion) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Occasion: _getOccasion(occasion) gets owner, person, occasionType, date
+     and owner equals user
+     and in Relationship: _getRelationshipByName(owner, person) gets relationship, relationshipType
+     and in Notes: _getNotesByRelationship(owner, relationship) gets note, title, content
+     and in MemoryGallery: _getImagesByRelationship(owner, relationship) gets imageUrl, uploadDate
+then SuggestionEngine.generateSuggestion(owner: user, context: suggestionContext)
+
+sync GenerateSuggestionForOccasionResponse
+when Requesting.request(path: "/SuggestionEngine/generateSuggestionForOccasion") returns request
+     and SuggestionEngine.generateSuggestion() returns suggestion, content
+then Requesting.respond(request, suggestion, content)
+
+
+sync UpdateProfileNameRequest
+when Requesting.request(path: "/Profile/updateName", session, name) returns request
+     and in Sessioning: _getUser(session) gets user
+then Profile.updateName(user, name)
+
+sync UpdateProfileNameResponse
+when Requesting.request(path: "/Profile/updateName") returns request
+     and Profile.updateName() returns ()
+then Requesting.respond(request, status: "updated")
+
+
+sync UpdateProfileEmailRequest
+when Requesting.request(path: "/Profile/updateEmail", session, email) returns request
+     and in Sessioning: _getUser(session) gets user
+then Profile.updateEmail(user, email)
+
+sync UpdateProfileEmailResponse
+when Requesting.request(path: "/Profile/updateEmail") returns request
+     and Profile.updateEmail() returns ()
+then Requesting.respond(request, status: "updated")
+
+
+sync GetRelationshipsRequest
+when Requesting.request(path: "/Relationship/_getRelationships", session) returns request
+     and in Sessioning: _getUser(session) gets user
+then Relationship._getRelationships(owner: user)
+
+sync GetRelationshipsResponse
+when Requesting.request(path: "/Relationship/_getRelationships") returns request
+     and Relationship._getRelationships() returns relationship, name, relationshipType
+then Requesting.respond(request, relationships: collected from relationship, name, relationshipType)
+
+
+sync GetNotesByRelationshipRequest
+when Requesting.request(path: "/Notes/_getNotesByRelationship", session, relationship) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then Notes._getNotesByRelationship(owner: user, relationship)
+
+sync GetNotesByRelationshipResponse
+when Requesting.request(path: "/Notes/_getNotesByRelationship") returns request
+     and Notes._getNotesByRelationship() returns note, title, content
+then Requesting.respond(request, notes: collected from note, title, content)
+
+
+sync GetImagesByRelationshipRequest
+when Requesting.request(path: "/MemoryGallery/_getImagesByRelationship", session, relationship) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Relationship: _getRelationship(relationship) gets owner
+     and owner equals user
+then MemoryGallery._getImagesByRelationship(owner: user, relationship)
+
+sync GetImagesByRelationshipResponse
+when Requesting.request(path: "/MemoryGallery/_getImagesByRelationship") returns request
+     and MemoryGallery._getImagesByRelationship() returns imageUrl, uploadDate
+then Requesting.respond(request, images: collected from imageUrl, uploadDate)
+
+
+sync GetOccasionsRequest
+when Requesting.request(path: "/Occasion/_getOccasions", session) returns request
+     and in Sessioning: _getUser(session) gets user
+then Occasion._getOccasions(owner: user)
+
+sync GetOccasionsResponse
+when Requesting.request(path: "/Occasion/_getOccasions") returns request
+     and Occasion._getOccasions() returns occasion, person, occasionType, date
+then Requesting.respond(request, occasions: collected from occasion, person, occasionType, date)
+
+
+sync GetChecklistRequest
+when Requesting.request(path: "/TaskChecklist/_getChecklist", session) returns request
+     and in Sessioning: _getUser(session) gets user
+then TaskChecklist._getChecklist(owner: user)
+
+sync GetChecklistResponse
+when Requesting.request(path: "/TaskChecklist/_getChecklist") returns request
+     and TaskChecklist._getChecklist() returns task, completed
+then Requesting.respond(request, checklist: collected from task, completed)
+
+
+sync GetChecklistByOccasionRequest
+when Requesting.request(path: "/Occasion/_getChecklistByOccasion", session, occasion) returns request
+     and in Sessioning: _getUser(session) gets user
+     and in Occasion: _getOccasion(occasion) gets owner, person, occasionType, date
+     and owner equals user
+then TaskChecklist._getChecklist(owner: user)
+
+sync GetChecklistByOccasionResponse
+when Requesting.request(path: "/Occasion/_getChecklistByOccasion") returns request
+     and TaskChecklist._getChecklist() returns task, completed
+     and in Task: _getTask(task) gets description
+then Requesting.respond(request, checklist: collected from task, completed, description)
+
+
+sync GetSuggestionsRequest
+when Requesting.request(path: "/SuggestionEngine/_getSuggestions", session) returns request
+     and in Sessioning: _getUser(session) gets user
+then SuggestionEngine._getSuggestions(owner: user)
+
+sync GetSuggestionsResponse
+when Requesting.request(path: "/SuggestionEngine/_getSuggestions") returns request
+     and SuggestionEngine._getSuggestions() returns suggestion, content, generatedAt
+then Requesting.respond(request, suggestions: collected from suggestion, content, generatedAt)
 ```
 
 # 3. User Journey
