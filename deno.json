@@ -8,7 +8,7 @@
         "@syncs": "./src/syncs/syncs.ts"
     },
     "tasks": {
-        "start": "deno run --allow-net --allow-write --allow-read --allow-sys --allow-env src/main.ts",
+        "start": "deno run --allow-net --allow-write --allow-read --allow-sys --allow-env --allow-ffi src/main.ts",
         "concepts": "deno run --allow-net --allow-read --allow-sys --allow-env src/concept_server.ts --port 8000 --baseUrl /api",
         "import": "deno run --allow-read --allow-write --allow-env src/utils/generate_imports.ts",
         "build": "deno run import"
