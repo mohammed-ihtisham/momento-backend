@@ -19,16 +19,16 @@ const PORT = parseInt(Deno.env.get("PORT") ?? "8000", 10);
 const REQUESTING_BASE_URL = Deno.env.get("REQUESTING_BASE_URL") ?? "/api";
 const REQUESTING_TIMEOUT = parseInt(
   Deno.env.get("REQUESTING_TIMEOUT") ?? "10000",
-  10,
+  10
 );
 
 // TODO: make sure you configure this environment variable for proper CORS configuration
-const REQUESTING_ALLOWED_DOMAIN = Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ??
-  "*";
+const REQUESTING_ALLOWED_DOMAIN =
+  Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ?? "*";
 
 // Choose whether or not to persist responses
-const REQUESTING_SAVE_RESPONSES = Deno.env.get("REQUESTING_SAVE_RESPONSES") ??
-  true;
+const REQUESTING_SAVE_RESPONSES =
+  Deno.env.get("REQUESTING_SAVE_RESPONSES") ?? true;
 
 const PREFIX = "Requesting" + ".";
 
@@ -70,7 +70,7 @@ export default class RequestingConcept {
     this.requests = this.db.collection(PREFIX + "requests");
     this.timeout = REQUESTING_TIMEOUT;
     console.log(
-      `\nRequesting concept initialized with a timeout of ${this.timeout}ms.`,
+      `\nRequesting concept initialized with a timeout of ${this.timeout}ms.`
     );
   }
 
@@ -82,9 +82,10 @@ export default class RequestingConcept {
    *
    * **effects** creates a new Request `r`; sets the input of `r` to be the path and all other input parameters; returns `r` as `request`
    */
-  async request(
-    inputs: { path: string; [key: string]: unknown },
-  ): Promise<{ request: Request }> {
+  async request(inputs: {
+    path: string;
+    [key: string]: unknown;
+  }): Promise<{ request: Request }> {
     const requestId = freshID() as Request;
     const requestDoc: RequestDoc = {
       _id: requestId,
@@ -115,9 +116,13 @@ export default class RequestingConcept {
    *
    * **effects** sets the response of the given Request to the provided key-value pairs.
    */
-  async respond(
-    { request, ...response }: { request: Request; [key: string]: unknown },
-  ): Promise<{ request: string }> {
+  async respond({
+    request,
+    ...response
+  }: {
+    request: Request;
+    [key: string]: unknown;
+  }): Promise<{ request: string }> {
     const pendingRequest = this.pending.get(request);
     if (pendingRequest) {
       // Resolve the promise for any waiting `_awaitResponse` call.
@@ -137,16 +142,18 @@ export default class RequestingConcept {
    *
    * **effects** returns the response associated with the given request, waiting if necessary up to a configured timeout.
    */
-  async _awaitResponse(
-    { request }: { request: Request },
-  ): Promise<{ response: unknown }[]> {
+  async _awaitResponse({
+    request,
+  }: {
+    request: Request;
+  }): Promise<{ response: unknown }[]> {
     const pendingRequest = this.pending.get(request);
 
     if (!pendingRequest) {
       // The request might have been processed already or never existed.
       // We could check the database for a persisted response here if needed.
       throw new Error(
-        `Request ${request} is not pending or does not exist: it may have timed-out.`,
+        `Request ${request} is not pending or does not exist: it may have timed-out.`
       );
     }
 
@@ -155,9 +162,9 @@ export default class RequestingConcept {
       timeoutId = setTimeout(
         () =>
           reject(
-            new Error(`Request ${request} timed out after ${this.timeout}ms`),
+            new Error(`Request ${request} timed out after ${this.timeout}ms`)
           ),
-        this.timeout,
+        this.timeout
       );
     });
 
@@ -184,7 +191,7 @@ export default class RequestingConcept {
  */
 export function startRequestingServer(
   // deno-lint-ignore no-explicit-any
-  concepts: Record<string, any>,
+  concepts: Record<string, any>
 ) {
   // deno-lint-ignore no-unused-vars
   const { Requesting, client, db, Engine, ...instances } = concepts;
@@ -196,7 +203,7 @@ export function startRequestingServer(
     "/*",
     cors({
       origin: REQUESTING_ALLOWED_DOMAIN,
-    }),
+    })
   );
 
   /**
@@ -212,11 +219,10 @@ export function startRequestingServer(
   let unverified = false;
   for (const [conceptName, concept] of Object.entries(instances)) {
     const methods = Object.getOwnPropertyNames(
-      Object.getPrototypeOf(concept),
-    )
-      .filter((name) =>
-        name !== "constructor" && typeof concept[name] === "function"
-      );
+      Object.getPrototypeOf(concept)
+    ).filter(
+      (name) => name !== "constructor" && typeof concept[name] === "function"
+    );
     for (const method of methods) {
       const route = `${REQUESTING_BASE_URL}/${conceptName}/${method}`;
       if (exclusions.includes(route)) continue;
@@ -226,17 +232,70 @@ export function startRequestingServer(
         ? `  -> ${route}`
         : `WARNING - UNVERIFIED ROUTE: ${route}`;
 
-      app.post(route, async (c) => {
-        try {
-          const body = await c.req.json().catch(() => ({})); // Handle empty body
-          const result = await concept[method](body);
-          return c.json(result);
-        } catch (e) {
-          console.error(`Error in ${conceptName}.${method}:`, e);
-          return c.json({ error: "An internal server error occurred." }, 500);
-        }
-      });
-      console.log(msg);
+      // Special handling for MemoryGallery.uploadImage to handle file uploads
+      if (conceptName === "MemoryGallery" && method === "uploadImage") {
+        app.post(route, async (c) => {
+          try {
+            const contentType = c.req.header("content-type") || "";
+
+            if (contentType.includes("multipart/form-data")) {
+              // Handle file upload
+              const formData = await c.req.formData();
+              const file = formData.get("file") as File | null;
+              let owner = formData.get("owner") as string;
+              let relationship = formData.get("relationship") as string;
+
+              if (!file) {
+                return c.json({ error: "No file provided." }, 400);
+              }
+              if (!owner) {
+                return c.json({ error: "Owner is required." }, 400);
+              }
+              if (!relationship) {
+                return c.json({ error: "Relationship is required." }, 400);
+              }
+
+              // Normalize owner and relationship by removing quotes and trimming
+              // This handles cases where values might be JSON-encoded strings
+              owner = owner.trim().replace(/^["']|["']$/g, "");
+              relationship = relationship.trim().replace(/^["']|["']$/g, "");
+
+              // Convert File to Uint8Array
+              const fileData = new Uint8Array(await file.arrayBuffer());
+
+              const result = await concept[method]({
+                owner,
+                relationship,
+                fileData,
+                fileName: file.name,
+                contentType: file.type,
+              });
+              return c.json(result);
+            } else {
+              // Fallback to JSON handling for backward compatibility
+              const body = await c.req.json().catch(() => ({}));
+              const result = await concept[method](body);
+              return c.json(result);
+            }
+          } catch (e) {
+            console.error(`Error in ${conceptName}.${method}:`, e);
+            return c.json({ error: "An internal server error occurred." }, 500);
+          }
+        });
+        console.log(msg + " (multipart/form-data supported)");
+      } else {
+        app.post(route, async (c) => {
+          try {
+            const body = await c.req.json().catch(() => ({})); // Handle empty body
+            const result = await concept[method](body);
+            return c.json(result);
+          } catch (e) {
+            console.error(`Error in ${conceptName}.${method}:`, e);
+            return c.json({ error: "An internal server error occurred." }, 500);
+          }
+        });
+        console.log(msg);
+      }
     }
   }
   const passthroughFile = "./src/concepts/Requesting/passthrough.ts";
@@ -258,7 +317,7 @@ export function startRequestingServer(
       if (typeof body !== "object" || body === null) {
         return c.json(
           { error: "Invalid request body. Must be a JSON object." },
-          400,
+          400
         );
       }
 
@@ -298,7 +357,7 @@ export function startRequestingServer(
   });
 
   console.log(
-    `\n🚀 Requesting server listening for POST requests at base path of ${routePath}`,
+    `\n🚀 Requesting server listening for POST requests at base path of ${routePath}`
   );
 
   Deno.serve({ port: PORT }, app.fetch);

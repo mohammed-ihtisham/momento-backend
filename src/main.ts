@@ -3,6 +3,8 @@
  * Requires the Requesting concept as a bootstrap concept.
  * Please run "deno run import" or "generate_imports.ts" to prepare "@concepts".
  */
+// Load environment variables first
+import "jsr:@std/dotenv/load";
 import * as concepts from "@concepts";
 
 // Use the following line instead to run against the test database, which resets each time.
