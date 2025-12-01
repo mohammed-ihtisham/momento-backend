@@ -313,23 +313,73 @@ export function startRequestingServer(
   const routePath = `${REQUESTING_BASE_URL}/*`;
   app.post(routePath, async (c) => {
     try {
-      const body = await c.req.json();
-      if (typeof body !== "object" || body === null) {
-        return c.json(
-          { error: "Invalid request body. Must be a JSON object." },
-          400
-        );
-      }
-
       // Extract the specific action path from the request URL.
       // e.g., if base is /api and request is /api/users/create, path is /users/create
       const actionPath = c.req.path.substring(REQUESTING_BASE_URL.length);
 
-      // Combine the path from the URL with the JSON body to form the action's input.
-      const inputs = {
-        ...body,
-        path: actionPath,
-      };
+      // Check if this is a file upload request (multipart/form-data)
+      const contentType = c.req.header("content-type") || "";
+      let inputs: { path: string; [key: string]: unknown };
+
+      if (contentType.includes("multipart/form-data")) {
+        // Handle file upload for MemoryGallery.uploadImage
+        const formData = await c.req.formData();
+        const file = formData.get("file") as File | null;
+
+        if (!file) {
+          return c.json({ error: "No file provided." }, 400);
+        }
+
+        // Convert File to Uint8Array
+        const fileData = new Uint8Array(await file.arrayBuffer());
+
+        // Get other form fields
+        let owner = formData.get("owner") as string | null;
+        const session = formData.get("session") as string | null;
+        let relationship = formData.get("relationship") as string | null;
+
+        // Normalize owner and relationship by removing quotes and trimming
+        if (owner) {
+          owner = owner.trim().replace(/^["']|["']$/g, "");
+        }
+        if (relationship) {
+          relationship = relationship.trim().replace(/^["']|["']$/g, "");
+        }
+
+        // Build inputs object
+        inputs = {
+          path: actionPath,
+          fileData,
+          fileName: file.name,
+          contentType: file.type,
+        };
+
+        // Add owner or session (prefer session if both are provided)
+        if (session) {
+          inputs.session = session.trim().replace(/^["']|["']$/g, "");
+        }
+        if (owner) {
+          inputs.owner = owner;
+        }
+        if (relationship) {
+          inputs.relationship = relationship;
+        }
+      } else {
+        // Standard JSON request
+        const body = await c.req.json();
+        if (typeof body !== "object" || body === null) {
+          return c.json(
+            { error: "Invalid request body. Must be a JSON object." },
+            400
+          );
+        }
+
+        // Combine the path from the URL with the JSON body to form the action's input.
+        inputs = {
+          ...body,
+          path: actionPath,
+        };
+      }
 
       console.log(`[Requesting] Received request for path: ${inputs.path}`);
 

@@ -76,4 +76,10 @@ export const exclusions: Array<string> = [
   "/api/Occasion/_getOccasions",
   "/api/Occasion/_getOccasionsByPerson",
   "/api/Occasion/_getOccasionsByDate",
+  // MemoryGallery - all routes require authentication
+  "/api/MemoryGallery/uploadImage",
+  "/api/MemoryGallery/addImage",
+  "/api/MemoryGallery/removeImage",
+  "/api/MemoryGallery/_getImages",
+  "/api/MemoryGallery/_getImagesByRelationship",
 ];
