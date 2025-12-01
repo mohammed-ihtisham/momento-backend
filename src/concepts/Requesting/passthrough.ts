@@ -82,4 +82,27 @@ export const exclusions: Array<string> = [
   "/api/MemoryGallery/removeImage",
   "/api/MemoryGallery/_getImages",
   "/api/MemoryGallery/_getImagesByRelationship",
+  // Task - all routes require authentication
+  "/api/Task/createTask",
+  "/api/Task/updateTaskDescription",
+  "/api/Task/deleteTask",
+  "/api/Task/_getTask",
+  "/api/Task/_getTasks",
+  // TaskChecklist - all routes require authentication
+  "/api/TaskChecklist/addTask",
+  "/api/TaskChecklist/removeTask",
+  "/api/TaskChecklist/markComplete",
+  "/api/TaskChecklist/markIncomplete",
+  "/api/TaskChecklist/_getChecklistEntry",
+  "/api/TaskChecklist/_getChecklist",
+  "/api/TaskChecklist/_getCompletedTasks",
+  "/api/TaskChecklist/_getIncompleteTasks",
+  // SuggestionEngine - all routes require authentication
+  "/api/SuggestionEngine/generateSuggestion",
+  "/api/SuggestionEngine/_getSuggestions",
+  // Collaborators - all routes require authentication
+  "/api/Collaborators/addCollaborator",
+  "/api/Collaborators/removeCollaborator",
+  "/api/Collaborators/_getCollaborators",
+  "/api/Collaborators/_hasCollaborator",
 ];

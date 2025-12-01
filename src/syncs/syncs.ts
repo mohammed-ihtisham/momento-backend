@@ -4,18 +4,27 @@
 
 import type { Sync } from "@engine";
 
+import * as sync_taskchecklist from "./taskchecklist.sync.ts";
 import * as sync_sessioning from "./sessioning.sync.ts";
 import * as sync_sample from "./sample.sync.ts";
 import * as sync_relationship from "./relationship.sync.ts";
 import * as sync_profile from "./profile.sync.ts";
 import * as sync_notes from "./notes.sync.ts";
 import * as sync_memorygallery from "./memorygallery.sync.ts";
+import * as sync_suggestionengine from "./suggestionengine.sync.ts";
+import * as sync_collaborators from "./collaborators.sync.ts";
 import * as sync_occasion from "./occasion.sync.ts";
 import * as sync_userauth from "./userauth.sync.ts";
+import * as sync_task from "./task.sync.ts";
 
 const allSyncs: Record<string, Sync> = {};
 
 
+for (const [name, func] of Object.entries(sync_taskchecklist)) {
+  if (typeof func === "function") {
+    allSyncs[`taskchecklist.${name}`] = func as Sync;
+  }
+}
 for (const [name, func] of Object.entries(sync_sessioning)) {
   if (typeof func === "function") {
     allSyncs[`sessioning.${name}`] = func as Sync;
@@ -46,6 +55,16 @@ for (const [name, func] of Object.entries(sync_memorygallery)) {
     allSyncs[`memorygallery.${name}`] = func as Sync;
   }
 }
+for (const [name, func] of Object.entries(sync_suggestionengine)) {
+  if (typeof func === "function") {
+    allSyncs[`suggestionengine.${name}`] = func as Sync;
+  }
+}
+for (const [name, func] of Object.entries(sync_collaborators)) {
+  if (typeof func === "function") {
+    allSyncs[`collaborators.${name}`] = func as Sync;
+  }
+}
 for (const [name, func] of Object.entries(sync_occasion)) {
   if (typeof func === "function") {
     allSyncs[`occasion.${name}`] = func as Sync;
@@ -54,6 +73,11 @@ for (const [name, func] of Object.entries(sync_occasion)) {
 for (const [name, func] of Object.entries(sync_userauth)) {
   if (typeof func === "function") {
     allSyncs[`userauth.${name}`] = func as Sync;
+  }
+}
+for (const [name, func] of Object.entries(sync_task)) {
+  if (typeof func === "function") {
+    allSyncs[`task.${name}`] = func as Sync;
   }
 }
 
