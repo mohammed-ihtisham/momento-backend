@@ -6,6 +6,7 @@ import type { Sync } from "@engine";
 
 import * as sync_sessioning from "./sessioning.sync.ts";
 import * as sync_sample from "./sample.sync.ts";
+import * as sync_relationship from "./relationship.sync.ts";
 import * as sync_profile from "./profile.sync.ts";
 import * as sync_userauth from "./userauth.sync.ts";
 
@@ -20,6 +21,11 @@ for (const [name, func] of Object.entries(sync_sessioning)) {
 for (const [name, func] of Object.entries(sync_sample)) {
   if (typeof func === "function") {
     allSyncs[`sample.${name}`] = func as Sync;
+  }
+}
+for (const [name, func] of Object.entries(sync_relationship)) {
+  if (typeof func === "function") {
+    allSyncs[`relationship.${name}`] = func as Sync;
   }
 }
 for (const [name, func] of Object.entries(sync_profile)) {

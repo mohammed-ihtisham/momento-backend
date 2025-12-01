@@ -53,4 +53,11 @@ export const exclusions: Array<string> = [
   "/api/Profile/deleteProfile",
   "/api/Profile/_getProfile",
   "/api/Profile/_getName",
+  // Relationship - all routes require authentication
+  "/api/Relationship/createRelationship",
+  "/api/Relationship/updateRelationship",
+  "/api/Relationship/deleteRelationship",
+  "/api/Relationship/_getRelationship",
+  "/api/Relationship/_getRelationships",
+  "/api/Relationship/_getRelationshipByName",
 ];

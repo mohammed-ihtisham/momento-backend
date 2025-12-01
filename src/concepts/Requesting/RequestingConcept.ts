@@ -342,6 +342,22 @@ export function startRequestingServer(
 
       // 3. Send the response back to the client.
       const { response } = responseArray[0];
+
+      // Special handling for query responses: if response is an object with a single
+      // array property (like { relationships: [...] }), unwrap it to send just the array.
+      // This matches the API spec where queries return arrays directly.
+      if (
+        response &&
+        typeof response === "object" &&
+        !Array.isArray(response) &&
+        Object.keys(response).length === 1
+      ) {
+        const value = Object.values(response)[0];
+        if (Array.isArray(value)) {
+          return c.json(value);
+        }
+      }
+
       return c.json(response);
     } catch (e) {
       if (e instanceof Error) {
