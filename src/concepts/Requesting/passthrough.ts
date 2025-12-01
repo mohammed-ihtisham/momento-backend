@@ -47,4 +47,10 @@ export const exclusions: Array<string> = [
   "/api/Sessioning/create",
   "/api/Sessioning/delete",
   "/api/Sessioning/_getUser",
+  // Profile - all routes require authentication
+  "/api/Profile/createProfile",
+  "/api/Profile/updateName",
+  "/api/Profile/deleteProfile",
+  "/api/Profile/_getProfile",
+  "/api/Profile/_getName",
 ];
