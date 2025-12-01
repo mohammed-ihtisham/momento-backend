@@ -5,6 +5,7 @@
 import type { Sync } from "@engine";
 
 import * as sync_sample from "./sample.sync.ts";
+import * as sync_userauth from "./userauth.sync.ts";
 
 const allSyncs: Record<string, Sync> = {};
 
@@ -12,6 +13,11 @@ const allSyncs: Record<string, Sync> = {};
 for (const [name, func] of Object.entries(sync_sample)) {
   if (typeof func === "function") {
     allSyncs[`sample.${name}`] = func as Sync;
+  }
+}
+for (const [name, func] of Object.entries(sync_userauth)) {
+  if (typeof func === "function") {
+    allSyncs[`userauth.${name}`] = func as Sync;
   }
 }
 
