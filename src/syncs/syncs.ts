@@ -9,6 +9,7 @@ import * as sync_sample from "./sample.sync.ts";
 import * as sync_relationship from "./relationship.sync.ts";
 import * as sync_profile from "./profile.sync.ts";
 import * as sync_notes from "./notes.sync.ts";
+import * as sync_occasion from "./occasion.sync.ts";
 import * as sync_userauth from "./userauth.sync.ts";
 
 const allSyncs: Record<string, Sync> = {};
@@ -37,6 +38,11 @@ for (const [name, func] of Object.entries(sync_profile)) {
 for (const [name, func] of Object.entries(sync_notes)) {
   if (typeof func === "function") {
     allSyncs[`notes.${name}`] = func as Sync;
+  }
+}
+for (const [name, func] of Object.entries(sync_occasion)) {
+  if (typeof func === "function") {
+    allSyncs[`occasion.${name}`] = func as Sync;
   }
 }
 for (const [name, func] of Object.entries(sync_userauth)) {

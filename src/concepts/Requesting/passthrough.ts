@@ -68,4 +68,12 @@ export const exclusions: Array<string> = [
   "/api/Notes/_getNotes",
   "/api/Notes/_getNotesByRelationship",
   "/api/Notes/_getNoteByTitle",
+  // Occasion - all routes require authentication
+  "/api/Occasion/createOccasion",
+  "/api/Occasion/updateOccasion",
+  "/api/Occasion/deleteOccasion",
+  "/api/Occasion/_getOccasion",
+  "/api/Occasion/_getOccasions",
+  "/api/Occasion/_getOccasionsByPerson",
+  "/api/Occasion/_getOccasionsByDate",
 ];
