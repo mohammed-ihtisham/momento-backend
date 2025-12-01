@@ -60,4 +60,12 @@ export const exclusions: Array<string> = [
   "/api/Relationship/_getRelationship",
   "/api/Relationship/_getRelationships",
   "/api/Relationship/_getRelationshipByName",
+  // Notes - all routes require authentication
+  "/api/Notes/createNote",
+  "/api/Notes/updateNote",
+  "/api/Notes/deleteNote",
+  "/api/Notes/_getNote",
+  "/api/Notes/_getNotes",
+  "/api/Notes/_getNotesByRelationship",
+  "/api/Notes/_getNoteByTitle",
 ];
