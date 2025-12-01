@@ -287,7 +287,15 @@ export function startRequestingServer(
         app.post(route, async (c) => {
           try {
             const body = await c.req.json().catch(() => ({})); // Handle empty body
+            console.log(
+              `[Passthrough] Calling ${conceptName}.${method} with body:`,
+              body
+            );
             const result = await concept[method](body);
+            console.log(
+              `[Passthrough] ${conceptName}.${method} returned:`,
+              result
+            );
             return c.json(result);
           } catch (e) {
             console.error(`Error in ${conceptName}.${method}:`, e);
@@ -316,6 +324,17 @@ export function startRequestingServer(
       // Extract the specific action path from the request URL.
       // e.g., if base is /api and request is /api/users/create, path is /users/create
       const actionPath = c.req.path.substring(REQUESTING_BASE_URL.length);
+
+      // Check if this route should be handled by passthrough (inclusions)
+      // If so, skip it - passthrough routes are registered first and will handle it
+      const fullRoute = c.req.path;
+      if (fullRoute in inclusions) {
+        // This should have been handled by passthrough, but if we reach here,
+        // it means the passthrough route didn't match. Log a warning.
+        console.warn(
+          `[Requesting] Route ${fullRoute} is in inclusions but reached Requesting handler. This may indicate a routing issue.`
+        );
+      }
 
       // Check if this is a file upload request (multipart/form-data)
       const contentType = c.req.header("content-type") || "";

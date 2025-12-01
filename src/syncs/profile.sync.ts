@@ -6,10 +6,10 @@ import { Profile, Sessioning, Requesting, UserAuth } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
 
 /**
- * Sync: Handle createProfile request
+ * Sync: Handle createProfile request with session
  * Requires authentication - user can only create their own profile.
  */
-export const CreateProfileRequest: Sync = ({ request, session, user, name }) => ({
+export const CreateProfileRequestWithSession: Sync = ({ request, session, user, name }) => ({
   when: actions([
     Requesting.request,
     { path: "/Profile/createProfile", session, name },
@@ -20,6 +20,80 @@ export const CreateProfileRequest: Sync = ({ request, session, user, name }) => 
     return await frames.query(Sessioning._getUser, { session }, { user });
   },
   then: actions([Profile.createProfile, { user, name }]),
+});
+
+/**
+ * Sync: Handle createProfile request with user (backward compatibility)
+ * Accepts user directly for backward compatibility.
+ * If profile already exists (e.g., from CreateProfileOnRegister), updates the name instead.
+ */
+export const CreateProfileRequestWithUser: Sync = ({ request, user, name }) => ({
+  when: actions([
+    Requesting.request,
+    { path: "/Profile/createProfile", user, name },
+    { request },
+  ]),
+  where: async (frames: Frames) => {
+    const results: Frames = new Frames();
+    for (const frame of frames) {
+      const userValue = frame[user] as string;
+      
+      // Check if profile already exists
+      const existingProfile = await Profile._getProfile({ user: userValue });
+      
+      if (existingProfile) {
+        // Profile exists - skip this frame, updateName sync will handle it
+        // Don't add to results, so createProfile won't be called
+        continue;
+      } else {
+        // Profile doesn't exist - create it
+        results.push(frame);
+      }
+    }
+    return results;
+  },
+  then: actions([Profile.createProfile, { user, name }]),
+});
+
+/**
+ * Sync: Handle createProfile when profile already exists - update name instead
+ * This handles the case where CreateProfileOnRegister already created a profile.
+ */
+export const CreateProfileUpdateNameRequest: Sync = ({ request, user, name }) => ({
+  when: actions([
+    Requesting.request,
+    { path: "/Profile/createProfile", user, name },
+    { request },
+  ]),
+  where: async (frames: Frames) => {
+    const results: Frames = new Frames();
+    for (const frame of frames) {
+      const userValue = frame[user] as string;
+      
+      // Check if profile already exists
+      const existingProfile = await Profile._getProfile({ user: userValue });
+      
+      if (existingProfile) {
+        // Profile exists - update name
+        results.push(frame);
+      }
+      // If profile doesn't exist, skip - CreateProfileRequestWithUser will handle it
+    }
+    return results;
+  },
+  then: actions([Profile.updateName, { user, name }]),
+});
+
+/**
+ * Sync: Respond when createProfile is called but profile exists - updateName was used instead
+ * Returns the profile ID so the frontend can use it.
+ */
+export const CreateProfileUpdateNameResponse: Sync = ({ request, profile }) => ({
+  when: actions(
+    [Requesting.request, { path: "/Profile/createProfile" }, { request }],
+    [Profile.updateName, {}, { profile }],
+  ),
+  then: actions([Requesting.respond, { request, profile }]),
 });
 
 export const CreateProfileResponseSuccess: Sync = ({ request, profile }) => ({
@@ -65,7 +139,15 @@ export const UpdateNameRequest: Sync = ({ request, session, user, name }) => ({
   then: actions([Profile.updateName, { user, name }]),
 });
 
-export const UpdateNameResponse: Sync = ({ request, error }) => ({
+export const UpdateNameResponseSuccess: Sync = ({ request, profile }) => ({
+  when: actions(
+    [Requesting.request, { path: "/Profile/updateName" }, { request }],
+    [Profile.updateName, {}, { profile }],
+  ),
+  then: actions([Requesting.respond, { request, profile }]),
+});
+
+export const UpdateNameResponseError: Sync = ({ request, error }) => ({
   when: actions(
     [Requesting.request, { path: "/Profile/updateName" }, { request }],
     [Profile.updateName, {}, { error }],

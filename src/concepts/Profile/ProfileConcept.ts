@@ -68,14 +68,14 @@ export default class ProfileConcept {
   }: {
     user: User;
     name: string;
-  }): Promise<Empty | { error: string }> {
+  }): Promise<{ profile: Profile } | { error: string }> {
     const existingProfile = await this.profiles.findOne({ user });
     if (!existingProfile) {
       return { error: `Profile for user ${user} not found.` };
     }
 
     await this.profiles.updateOne({ user }, { $set: { name } });
-    return {};
+    return { profile: existingProfile._id };
   }
 
   /**
