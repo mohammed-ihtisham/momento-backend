@@ -6,10 +6,10 @@ import { Relationship, Sessioning, Requesting } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
 
 /**
- * Sync: Handle createRelationship request
+ * Sync: Handle createRelationship request with session
  * Requires authentication - user creates relationships for themselves.
  */
-export const CreateRelationshipRequest: Sync = ({ request, session, user, name, relationshipType }) => ({
+export const CreateRelationshipRequestWithSession: Sync = ({ request, session, user, name, relationshipType }) => ({
   when: actions([
     Requesting.request,
     { path: "/Relationship/createRelationship", session, name, relationshipType },
@@ -22,12 +22,33 @@ export const CreateRelationshipRequest: Sync = ({ request, session, user, name, 
   then: actions([Relationship.createRelationship, { owner: user, name, relationshipType }]),
 });
 
-export const CreateRelationshipResponse: Sync = ({ request, relationship, error }) => ({
+/**
+ * Sync: Handle createRelationship request with owner (backward compatibility)
+ * Accepts owner directly for backward compatibility.
+ */
+export const CreateRelationshipRequestWithOwner: Sync = ({ request, owner, name, relationshipType }) => ({
+  when: actions([
+    Requesting.request,
+    { path: "/Relationship/createRelationship", owner, name, relationshipType },
+    { request },
+  ]),
+  then: actions([Relationship.createRelationship, { owner, name, relationshipType }]),
+});
+
+export const CreateRelationshipResponseSuccess: Sync = ({ request, relationship }) => ({
   when: actions(
     [Requesting.request, { path: "/Relationship/createRelationship" }, { request }],
-    [Relationship.createRelationship, {}, { relationship, error }],
+    [Relationship.createRelationship, {}, { relationship }],
   ),
-  then: actions([Requesting.respond, { request, relationship, error }]),
+  then: actions([Requesting.respond, { request, relationship }]),
+});
+
+export const CreateRelationshipResponseError: Sync = ({ request, error }) => ({
+  when: actions(
+    [Requesting.request, { path: "/Relationship/createRelationship" }, { request }],
+    [Relationship.createRelationship, {}, { error }],
+  ),
+  then: actions([Requesting.respond, { request, error }]),
 });
 
 /**

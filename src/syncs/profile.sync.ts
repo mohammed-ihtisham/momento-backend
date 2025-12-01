@@ -22,12 +22,20 @@ export const CreateProfileRequest: Sync = ({ request, session, user, name }) => 
   then: actions([Profile.createProfile, { user, name }]),
 });
 
-export const CreateProfileResponse: Sync = ({ request, profile, error }) => ({
+export const CreateProfileResponseSuccess: Sync = ({ request, profile }) => ({
   when: actions(
     [Requesting.request, { path: "/Profile/createProfile" }, { request }],
-    [Profile.createProfile, {}, { profile, error }],
+    [Profile.createProfile, {}, { profile }],
   ),
-  then: actions([Requesting.respond, { request, profile, error }]),
+  then: actions([Requesting.respond, { request, profile }]),
+});
+
+export const CreateProfileResponseError: Sync = ({ request, error }) => ({
+  when: actions(
+    [Requesting.request, { path: "/Profile/createProfile" }, { request }],
+    [Profile.createProfile, {}, { error }],
+  ),
+  then: actions([Requesting.respond, { request, error }]),
 });
 
 /**
