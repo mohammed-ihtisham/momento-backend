@@ -4,12 +4,18 @@
 
 import type { Sync } from "@engine";
 
+import * as sync_sessioning from "./sessioning.sync.ts";
 import * as sync_sample from "./sample.sync.ts";
 import * as sync_userauth from "./userauth.sync.ts";
 
 const allSyncs: Record<string, Sync> = {};
 
 
+for (const [name, func] of Object.entries(sync_sessioning)) {
+  if (typeof func === "function") {
+    allSyncs[`sessioning.${name}`] = func as Sync;
+  }
+}
 for (const [name, func] of Object.entries(sync_sample)) {
   if (typeof func === "function") {
     allSyncs[`sample.${name}`] = func as Sync;

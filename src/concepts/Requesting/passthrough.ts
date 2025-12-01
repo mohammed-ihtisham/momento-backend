@@ -43,4 +43,8 @@ export const inclusions: Record<string, string> = {
 export const exclusions: Array<string> = [
   // UserAuth - protected query
   "/api/UserAuth/_getUserByUsername",
+  // Sessioning - all routes should be handled via syncs
+  "/api/Sessioning/create",
+  "/api/Sessioning/delete",
+  "/api/Sessioning/_getUser",
 ];
