@@ -1,4 +1,6 @@
 import { Collection, Db } from "npm:mongodb";
+import { GoogleGenerativeAI } from "npm:@google/generative-ai";
+import "jsr:@std/dotenv/load";
 import { ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
 
@@ -30,29 +32,54 @@ interface SuggestionDoc {
 
 /**
  * Generates a suggestion using the Gemini API based on the provided context.
- * This is a placeholder that should be implemented with actual Gemini API calls.
  *
  * @param context The contextual information to generate a suggestion from
  * @returns The generated suggestion content
+ * @throws Error if the API key is missing or if the API call fails
  */
 async function generateSuggestionContent(
   context: SuggestionContext
 ): Promise<string> {
-  // TODO: Implement Gemini API integration
-  // Example structure:
-  // 1. Import @google/generative-ai
-  // 2. Initialize the model with API key from environment
-  // 3. Format the context into a prompt
-  // 4. Call the model.generateContent() method
-  // 5. Extract and return the generated text
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY environment variable is not set. Please configure your Gemini API key."
+    );
+  }
 
-  // Placeholder implementation - returns a simple message
-  // Replace this with actual Gemini API call
+  // Initialize the Gemini API client
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  // Format the context into a structured prompt
   const contextStr = JSON.stringify(context, null, 2);
-  // Using Promise.resolve to maintain async signature for future implementation
-  return await Promise.resolve(
-    `Suggestion based on context: ${contextStr.substring(0, 200)}...`
-  );
+  const prompt = `Based on the following contextual information about a user, generate a helpful and actionable suggestion. The suggestion should be relevant, practical, and personalized to the context provided.
+
+Context:
+${contextStr}
+
+Please provide a clear, concise suggestion that addresses the user's needs based on this context.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    if (!text || text.trim() === "") {
+      throw new Error("Gemini API returned an empty response");
+    }
+
+    return text.trim();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(
+        `Failed to generate suggestion with Gemini API: ${error.message}`
+      );
+    }
+    throw new Error(
+      "Failed to generate suggestion with Gemini API: Unknown error"
+    );
+  }
 }
 
 /**
