@@ -2,8 +2,9 @@
  * Synchronizations for Occasion concept
  */
 
-import { Occasion, Sessioning, Requesting } from "@concepts";
+import { Occasion, Sessioning, Requesting, Collaborators } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
+import { ID } from "@utils/types.ts";
 
 /**
  * Sync: Handle createOccasion request with session
@@ -53,9 +54,9 @@ export const CreateOccasionResponseError: Sync = ({ request, error }) => ({
 
 /**
  * Sync: Handle updateOccasion request
- * Requires authentication AND ownership verification - user can only update their own occasions.
+ * Requires authentication AND (ownership OR collaborator status) - user can update their own occasions or occasions they collaborate on.
  */
-export const UpdateOccasionRequest: Sync = ({ request, session, user, occasion, person, occasionType, date, owner }) => ({
+export const UpdateOccasionRequest: Sync = ({ request, session, user, occasion, person, occasionType, date }) => ({
   when: actions([
     Requesting.request,
     { path: "/Occasion/updateOccasion", session, occasion, person, occasionType, date },
@@ -63,12 +64,13 @@ export const UpdateOccasionRequest: Sync = ({ request, session, user, occasion, 
   ]),
   where: async (frames: Frames) => {
     // First verify session and get the authenticated user
-    let authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
+    const authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
     
-    // Then verify ownership by getting the occasion's owner
+    // Then verify ownership or collaborator status
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const occasionValue = frame[occasion] as string;
+      const occasionValue = frame[occasion] as ID;
+      const userValue = frame[user] as ID;
       const occasionData = await Occasion._getOccasion({ occasion: occasionValue });
       
       if (!occasionData) {
@@ -77,10 +79,18 @@ export const UpdateOccasionRequest: Sync = ({ request, session, user, occasion, 
       }
       
       // Check if the authenticated user owns this occasion
-      if (occasionData.owner === frame[user]) {
-        results.push({ ...frame, owner: occasionData.owner });
+      const isOwner = occasionData.owner === userValue;
+      
+      // Check if the authenticated user is a collaborator on this occasion
+      const isCollaborator = await Collaborators._isCollaboratorOnOccasion({
+        user: userValue,
+        occasionId: occasionValue,
+      });
+      
+      if (isOwner || isCollaborator) {
+        results.push({ ...frame });
       }
-      // If not owner, skip this frame (unauthorized)
+      // If not owner or collaborator, skip this frame (unauthorized)
     }
     return results;
   },
@@ -105,9 +115,9 @@ export const UpdateOccasionResponseError: Sync = ({ request, error }) => ({
 
 /**
  * Sync: Handle deleteOccasion request
- * Requires authentication AND ownership verification - user can only delete their own occasions.
+ * Requires authentication AND ownership - only owners can delete occasions (collaborators cannot).
  */
-export const DeleteOccasionRequest: Sync = ({ request, session, user, occasion, owner }) => ({
+export const DeleteOccasionRequest: Sync = ({ request, session, user, occasion }) => ({
   when: actions([
     Requesting.request,
     { path: "/Occasion/deleteOccasion", session, occasion },
@@ -115,12 +125,12 @@ export const DeleteOccasionRequest: Sync = ({ request, session, user, occasion, 
   ]),
   where: async (frames: Frames) => {
     // First verify session and get the authenticated user
-    let authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
+    const authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
     
-    // Then verify ownership by getting the occasion's owner
+    // Then verify ownership (only owners can delete, not collaborators)
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const occasionValue = frame[occasion] as string;
+      const occasionValue = frame[occasion] as ID;
       const occasionData = await Occasion._getOccasion({ occasion: occasionValue });
       
       if (!occasionData) {
@@ -130,7 +140,7 @@ export const DeleteOccasionRequest: Sync = ({ request, session, user, occasion, 
       
       // Check if the authenticated user owns this occasion
       if (occasionData.owner === frame[user]) {
-        results.push({ ...frame, owner: occasionData.owner });
+        results.push({ ...frame });
       }
       // If not owner, skip this frame (unauthorized)
     }
@@ -161,7 +171,7 @@ export const GetOccasionRequest: Sync = ({ request, occasion, occasionData }) =>
   where: async (frames: Frames) => {
     const results: Frames = new Frames();
     for (const frame of frames) {
-      const occasionValue = frame[occasion] as string;
+      const occasionValue = frame[occasion] as ID;
       const occasionResult = await Occasion._getOccasion({ occasion: occasionValue });
       
       const newFrame = { ...frame };
@@ -175,7 +185,7 @@ export const GetOccasionRequest: Sync = ({ request, occasion, occasionData }) =>
 
 /**
  * Sync: Handle _getOccasions request with session
- * Requires authentication - user can only see their own occasions.
+ * Requires authentication - user can see their own occasions and occasions they collaborate on.
  */
 export const GetOccasionsRequestWithSession: Sync = ({ request, session, user, occasions }) => ({
   when: actions([
@@ -184,16 +194,45 @@ export const GetOccasionsRequestWithSession: Sync = ({ request, session, user, o
     { request },
   ]),
   where: async (frames: Frames) => {
-    // Verify session and get the authenticated user (who is the owner)
+    // Verify session and get the authenticated user
     const authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
     
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const ownerValue = frame[user] as string;
-      const occasionsArray = await Occasion._getOccasions({ owner: ownerValue });
+      const userValue = frame[user] as ID;
+      
+      // Get occasions owned by the user
+      const ownedOccasions = await Occasion._getOccasions({ owner: userValue });
+      
+      // Get occasions where the user is a collaborator
+      const collaboratorOccasionIds = await Collaborators._getOccasionsForCollaborator({ user: userValue });
+      const collaboratorOccasions = await Promise.all(
+        collaboratorOccasionIds.map(async (occasionId) => {
+          const occasionData = await Occasion._getOccasion({ occasion: occasionId });
+          if (!occasionData) return null;
+          return {
+            occasion: occasionId,
+            person: occasionData.person,
+            occasionType: occasionData.occasionType,
+            date: occasionData.date,
+          };
+        })
+      );
+      const validCollaboratorOccasions = collaboratorOccasions.filter((o) => o !== null) as Array<{
+        occasion: ID;
+        person: string;
+        occasionType: string;
+        date: string;
+      }>;
+      
+      // Combine and deduplicate by occasion ID
+      const allOccasionsMap = new Map<string, typeof ownedOccasions[0]>();
+      ownedOccasions.forEach((o) => allOccasionsMap.set(o.occasion, o));
+      validCollaboratorOccasions.forEach((o) => allOccasionsMap.set(o.occasion, o));
+      const allOccasions = Array.from(allOccasionsMap.values());
       
       const newFrame = { ...frame };
-      newFrame[occasions] = occasionsArray;
+      newFrame[occasions] = allOccasions;
       results.push(newFrame);
     }
     return results.length > 0 ? results : authenticatedFrames;
@@ -215,7 +254,7 @@ export const GetOccasionsRequestWithOwner: Sync = ({ request, owner, occasions }
     const results: Frames = new Frames();
     
     for (const frame of frames) {
-      const ownerValue = frame[owner] as string | undefined;
+      const ownerValue = frame[owner] as ID | undefined;
       
       const newFrame = { ...frame };
       
@@ -252,7 +291,7 @@ export const GetOccasionsByPersonRequestWithSession: Sync = ({ request, session,
     
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const ownerValue = frame[user] as string;
+      const ownerValue = frame[user] as ID;
       const personValue = frame[person] as string;
       const occasionsArray = await Occasion._getOccasionsByPerson({ owner: ownerValue, person: personValue });
       
@@ -279,7 +318,7 @@ export const GetOccasionsByPersonRequestWithOwner: Sync = ({ request, owner, per
     const results: Frames = new Frames();
     
     for (const frame of frames) {
-      const ownerValue = frame[owner] as string | undefined;
+      const ownerValue = frame[owner] as ID | undefined;
       const personValue = frame[person] as string | undefined;
       
       const newFrame = { ...frame };
@@ -317,7 +356,7 @@ export const GetOccasionsByDateRequestWithSession: Sync = ({ request, session, u
     
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const ownerValue = frame[user] as string;
+      const ownerValue = frame[user] as ID;
       const dateValue = frame[date] as string;
       const occasionsArray = await Occasion._getOccasionsByDate({ owner: ownerValue, date: dateValue });
       
@@ -344,7 +383,7 @@ export const GetOccasionsByDateRequestWithOwner: Sync = ({ request, owner, date,
     const results: Frames = new Frames();
     
     for (const frame of frames) {
-      const ownerValue = frame[owner] as string | undefined;
+      const ownerValue = frame[owner] as ID | undefined;
       const dateValue = frame[date] as string | undefined;
       
       const newFrame = { ...frame };

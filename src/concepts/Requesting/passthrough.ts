@@ -103,6 +103,14 @@ export const exclusions: Array<string> = [
   // Collaborators - all routes require authentication
   "/api/Collaborators/addCollaborator",
   "/api/Collaborators/removeCollaborator",
+  "/api/Collaborators/createInvite",
+  "/api/Collaborators/acceptInvite",
+  "/api/Collaborators/declineInvite",
   "/api/Collaborators/_getCollaborators",
   "/api/Collaborators/_hasCollaborator",
+  "/api/Collaborators/_getIncomingInvites",
+  "/api/Collaborators/_getSentInvites",
+  "/api/Collaborators/_getCollaboratorsForOccasion",
+  "/api/Collaborators/_getOccasionsForCollaborator",
+  "/api/Collaborators/_isCollaboratorOnOccasion",
 ];
