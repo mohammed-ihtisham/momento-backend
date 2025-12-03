@@ -196,3 +196,153 @@ Deno.test("Multiple suggestions can be generated with different contexts", async
   }
 });
 
+Deno.test("Action: generateGiftSuggestions generates multiple gift suggestions from shared notes", async () => {
+  const [db, client] = await testDb();
+  const suggestionConcept = new SuggestionEngineConcept(db);
+
+  try {
+    const context: SuggestionContext = {
+      sharedNotes: "John loves hiking and outdoor activities. His birthday is in December. He enjoys reading science fiction books and drinking coffee.",
+      relationshipName: "John Doe",
+      relationshipType: "Friend",
+    };
+
+    const result = await suggestionConcept.generateGiftSuggestions({
+      owner: ownerA,
+      context,
+    });
+
+    assertNotEquals(
+      "error" in result,
+      true,
+      "Generating gift suggestions should not fail.",
+    );
+
+    const { suggestions } = result as {
+      suggestions: Array<{ suggestion: ID; content: string }>;
+    };
+
+    assertExists(suggestions, "Should return suggestions array.");
+    assertEquals(
+      suggestions.length,
+      3,
+      "Should generate exactly 3 gift suggestions.",
+    );
+
+    // Verify each suggestion has required fields
+    suggestions.forEach((s, index) => {
+      assertExists(s.suggestion, `Suggestion ${index} should have ID.`);
+      assertExists(s.content, `Suggestion ${index} should have content.`);
+      assertNotEquals(
+        s.content.trim(),
+        "",
+        `Suggestion ${index} should have non-empty content.`,
+      );
+    });
+
+    // Verify all suggestions are stored
+    const allSuggestions = await suggestionConcept._getSuggestions({
+      owner: ownerA,
+    });
+    assertEquals(
+      allSuggestions.length,
+      3,
+      "Should have 3 suggestions stored in database.",
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: generateGiftSuggestions requires valid non-empty context", async () => {
+  const [db, client] = await testDb();
+  const suggestionConcept = new SuggestionEngineConcept(db);
+
+  try {
+    // Empty context should fail
+    const emptyContextResult = await suggestionConcept.generateGiftSuggestions({
+      owner: ownerA,
+      context: {},
+    });
+    assertEquals(
+      "error" in emptyContextResult,
+      true,
+      "Generating with empty context should fail.",
+    );
+
+    // Null context should fail
+    const nullContextResult = await suggestionConcept.generateGiftSuggestions({
+      owner: ownerA,
+      context: null as unknown as SuggestionContext,
+    });
+    assertEquals(
+      "error" in nullContextResult,
+      true,
+      "Generating with null context should fail.",
+    );
+
+    // Valid context with sharedNotes should succeed
+    const validContext: SuggestionContext = {
+      sharedNotes: "Person likes chocolate and reading.",
+      relationshipName: "Test Person",
+    };
+    const validResult = await suggestionConcept.generateGiftSuggestions({
+      owner: ownerA,
+      context: validContext,
+    });
+    assertEquals(
+      "error" in validResult,
+      false,
+      "Generating with valid context should succeed.",
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: generateGiftSuggestions stores each suggestion separately", async () => {
+  const [db, client] = await testDb();
+  const suggestionConcept = new SuggestionEngineConcept(db);
+
+  try {
+    const context: SuggestionContext = {
+      sharedNotes: "Person enjoys cooking Italian food and has a pet cat.",
+    };
+
+    const result = await suggestionConcept.generateGiftSuggestions({
+      owner: ownerA,
+      context,
+    });
+
+    assertEquals(
+      "error" in result,
+      false,
+      "Generating gift suggestions should succeed.",
+    );
+
+    const { suggestions } = result as {
+      suggestions: Array<{ suggestion: ID; content: string }>;
+    };
+
+    // Verify all suggestion IDs are unique
+    const suggestionIds = suggestions.map((s) => s.suggestion);
+    const uniqueIds = new Set(suggestionIds);
+    assertEquals(
+      uniqueIds.size,
+      suggestionIds.length,
+      "All suggestion IDs should be unique.",
+    );
+
+    // Verify all suggestions have different content
+    const contents = suggestions.map((s) => s.content);
+    const uniqueContents = new Set(contents);
+    assertEquals(
+      uniqueContents.size,
+      contents.length,
+      "All suggestions should have different content.",
+    );
+  } finally {
+    await client.close();
+  }
+});
+

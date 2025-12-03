@@ -15,7 +15,9 @@
     "jsr:@std/yaml@*": "1.0.9",
     "npm:@google-cloud/storage@^7.7.0": "7.17.2",
     "npm:@google/genai@*": "1.21.0",
+    "npm:@google/generative-ai@*": "0.24.1",
     "npm:@types/mdast@4": "4.0.4",
+    "npm:@types/node@*": "24.2.0",
     "npm:bcrypt@*": "6.0.0",
     "npm:mdast-util-from-markdown@2": "2.0.2",
     "npm:mdast-util-frontmatter@2": "2.0.1",
@@ -106,6 +108,9 @@
         "google-auth-library",
         "ws"
       ]
+    },
+    "@google/generative-ai@0.24.1": {
+      "integrity": "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q=="
     },
     "@mongodb-js/saslprep@1.1.9": {
       "integrity": "sha512-tVkljjeEaAhCqTzajSdgbQ6gE6f3oneVwa3iXR6csiEwXXOFsiC6Uh9iAjAhXPtqa/XMDHWjjeNH/77m/Yq2dw==",
