@@ -1,8 +1,6 @@
 import { Collection, Db } from "npm:mongodb";
 import { ID, Empty } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
-import SessioningConcept from "@concepts/Sessioning/SessioningConcept.ts";
-import UserAuthConcept from "@concepts/UserAuth/UserAuthConcept.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "Collaborators" + ".";
@@ -51,103 +49,42 @@ export default class CollaboratorsConcept {
     session?: ID;
     recipientUsername?: string;
   }): Promise<{ invite: CollaborationInvite } | { error: string }> {
-    const {
-      sender,
-      recipient,
-      occasionId,
-      session,
-      recipientUsername,
-    } = args;
+    const { sender, recipient, occasionId } = args;
 
     console.log("[Collaborators.createInvite] Called with raw args:", args);
 
-    let resolvedSender: User | undefined = sender;
-    let resolvedRecipient: User | undefined = recipient;
-
-    // If sender/recipient not provided directly (sync path),
-    // try to resolve them using session + recipientUsername (concept_server / direct API path).
-    if ((!resolvedSender || !resolvedRecipient) && session && recipientUsername) {
-      try {
-        const sessioning = new SessioningConcept(this.db);
-        const userAuth = new UserAuthConcept(this.db);
-
-        const userFromSession = await sessioning._getUser({ session });
-        const recipientDoc = await userAuth._getUserByUsername({
-          username: recipientUsername,
-        });
-
-        if (userFromSession) {
-          resolvedSender = userFromSession as User;
-        }
-        if (recipientDoc?._id) {
-          resolvedRecipient = recipientDoc._id as User;
-        }
-
-        console.log(
-          "[Collaborators.createInvite] Resolved from session + username:",
-          {
-            session,
-            recipientUsername,
-            resolvedSender,
-            resolvedRecipient,
-          },
-        );
-      } catch (e) {
-        console.error(
-          "[Collaborators.createInvite] Error resolving sender/recipient from session + username:",
-          e,
-        );
-      }
+    // Validate required fields
+    if (!sender) {
+      console.error("[Collaborators.createInvite] Missing sender");
+      return { error: "Sender is required for an invite." };
     }
 
-    // Guard against missing sender or recipient
-    console.log("[Collaborators.createInvite] Final values:", {
-      sender: resolvedSender,
-      recipient: resolvedRecipient,
-      occasionId,
-      senderType: typeof resolvedSender,
-      recipientType: typeof resolvedRecipient,
-      occasionIdType: typeof occasionId,
-      senderIsNull: resolvedSender === null,
-      senderIsUndefined: resolvedSender === undefined,
-      recipientIsNull: resolvedRecipient === null,
-      recipientIsUndefined: resolvedRecipient === undefined,
-    });
-
-    if (!resolvedSender || !resolvedRecipient) {
-      console.error(
-        "[Collaborators.createInvite] Missing sender or recipient after resolution:",
-        {
-          sender: resolvedSender ?? "null/undefined",
-          recipient: resolvedRecipient ?? "null/undefined",
-        },
-      );
-      return { error: "Sender and recipient are required for an invite." };
+    if (!recipient) {
+      console.error("[Collaborators.createInvite] Missing recipient");
+      return { error: "Recipient is required for an invite." };
     }
 
-    // Additional check for empty strings (though IDs shouldn't be empty strings)
-    if (
-      (typeof resolvedSender === "string" && resolvedSender.trim() === "") ||
-      (typeof resolvedRecipient === "string" && resolvedRecipient.trim() === "")
-    ) {
-      console.error("[Collaborators.createInvite] Empty sender or recipient:", {
-        sender: resolvedSender === "" ? "empty string" : resolvedSender,
-        recipient: resolvedRecipient === "" ? "empty string" : resolvedRecipient,
-      });
-      return { error: "Sender and recipient are required for an invite." };
+    if (!occasionId) {
+      console.error("[Collaborators.createInvite] Missing occasionId");
+      return { error: "Occasion ID is required for an invite." };
     }
 
     // Check if there's already an invite or accepted collaboration
     const existing = await this.collaborators.findOne({
       occasionId,
-      user: resolvedRecipient,
+      user: recipient,
     });
+
     if (existing) {
       if (existing.status === "accepted") {
-        return { error: `User ${recipient} is already a collaborator on this occasion.` };
+        return {
+          error: `User is already a collaborator on this occasion.`,
+        };
       }
       if (existing.status === "pending") {
-        return { error: `A pending invite already exists for user ${recipient} on this occasion.` };
+        return {
+          error: `A pending invite already exists for this user on this occasion.`,
+        };
       }
       // If declined, we can create a new invite
     }
@@ -158,7 +95,7 @@ export default class CollaboratorsConcept {
       _id: inviteId,
       occasionId,
       user: recipient,
-      sender: resolvedSender,
+      sender: sender,
       status: "pending",
       createdAt: now,
       updatedAt: now,
@@ -183,10 +120,14 @@ export default class CollaboratorsConcept {
       return { error: `Invite ${invite} not found.` };
     }
     if (inviteDoc.user !== recipient) {
-      return { error: `User ${recipient} is not the recipient of this invite.` };
+      return {
+        error: `User ${recipient} is not the recipient of this invite.`,
+      };
     }
     if (inviteDoc.status !== "pending") {
-      return { error: `Invite ${invite} is not pending (current status: ${inviteDoc.status}).` };
+      return {
+        error: `Invite ${invite} is not pending (current status: ${inviteDoc.status}).`,
+      };
     }
 
     await this.collaborators.updateOne(
@@ -213,10 +154,14 @@ export default class CollaboratorsConcept {
       return { error: `Invite ${invite} not found.` };
     }
     if (inviteDoc.user !== recipient) {
-      return { error: `User ${recipient} is not the recipient of this invite.` };
+      return {
+        error: `User ${recipient} is not the recipient of this invite.`,
+      };
     }
     if (inviteDoc.status !== "pending") {
-      return { error: `Invite ${invite} is not pending (current status: ${inviteDoc.status}).` };
+      return {
+        error: `Invite ${invite} is not pending (current status: ${inviteDoc.status}).`,
+      };
     }
 
     await this.collaborators.updateOne(
@@ -246,7 +191,9 @@ export default class CollaboratorsConcept {
       status: "accepted",
     });
     if (existing) {
-      return { error: `User ${user} is already a collaborator on this occasion.` };
+      return {
+        error: `User ${user} is already a collaborator on this occasion.`,
+      };
     }
 
     // If there's a pending/declined invite, update it to accepted
@@ -426,7 +373,11 @@ export default class CollaboratorsConcept {
    * @requires The user exists.
    * @effects Returns all occasion IDs where the user is a collaborator.
    */
-  async _getOccasionsForCollaborator({ user }: { user: User }): Promise<Occasion[]> {
+  async _getOccasionsForCollaborator({
+    user,
+  }: {
+    user: User;
+  }): Promise<Occasion[]> {
     const collaborations = await this.collaborators
       .find({ user, status: "accepted" })
       .toArray();

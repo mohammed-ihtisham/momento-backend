@@ -100,18 +100,24 @@ export default class ProfileConcept {
   /**
    * Query: Retrieves the profile information for a user.
    * @requires A Profile exists for the user.
-   * @effects Returns the name and email of the Profile for the user.
+   * @effects Returns the name, username, and email of the Profile for the user.
    */
   async _getProfile({
     user,
   }: {
     user: User;
-  }): Promise<{ name: string; email?: string } | null> {
+  }): Promise<{ name: string; username?: string; email?: string } | null> {
     const profile = await this.profiles.findOne({ user });
     if (!profile) {
       return null;
     }
-    return { name: profile.name };
+
+    // Get the username from UserAuth.users collection
+    const userAuthCollection = this.db.collection("UserAuth.users");
+    const userDoc = await userAuthCollection.findOne({ _id: profile.user });
+    const username = userDoc?.username;
+
+    return { name: profile.name, username };
   }
 
   /**
