@@ -5,6 +5,7 @@
 import { Collaborators, Sessioning, Requesting, UserAuth } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
 import { ID } from "@utils/types.ts";
+import { getDb } from "@utils/database.ts";
 
 /**
  * Sync: Handle createInvite request
@@ -18,7 +19,9 @@ export const CreateInviteRequest: Sync = ({
   recipientUsername,
   occasionId,
   recipientUser,
-}) => ({
+}) => {
+  console.log("[CreateInviteRequest] Sync definition loaded");
+  return {
   when: actions([
     Requesting.request,
     {
@@ -26,21 +29,48 @@ export const CreateInviteRequest: Sync = ({
     },
     { request },
   ]),
-  where: async (frames: Frames) => {
-    console.log(
-      "[CreateInviteRequest] where clause started, initial frames:",
-      frames.length
-    );
+    where: async (frames: Frames) => {
+      console.log(
+        "[CreateInviteRequest] where clause started, initial frames:",
+        frames.length
+      );
+      
+      // Get the request record to extract input fields
+      const requestValue = frames[0]?.[request] as ID | undefined;
+      if (!requestValue) {
+        console.error("[CreateInviteRequest] No request ID in frame");
+        return frames;
+      }
+      
+      // Query the database directly for the request document
+      const [db] = await getDb();
+      const requestsCollection = db.collection("Requesting.requests");
+      const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+      
+      if (!requestDoc) {
+        console.error("[CreateInviteRequest] Request not found in database");
+        return frames;
+      }
+      
+      console.log("[CreateInviteRequest] Request input:", requestDoc.input);
+      
+      // Extract fields from request input
+      const input = requestDoc.input as Record<string, unknown>;
+      const sessionValue = input.session as ID | undefined;
+      const senderUsernameValue = input.senderUsername as string | undefined;
+      const recipientUsernameValue = input.recipientUsername as string | undefined;
+      const occasionIdValue = input.occasionId as ID | undefined;
+      
+      console.log("[CreateInviteRequest] Extracted values:", {
+        sessionValue,
+        senderUsernameValue,
+        recipientUsernameValue,
+        occasionIdValue,
+      });
 
     const results: Frames = new Frames();
 
     for (const frame of frames) {
-      const sessionValue = frame[session] as ID | undefined;
-      const senderUsernameValue = frame[senderUsername] as string | undefined;
-      const recipientUsernameValue = frame[recipientUsername] as
-        | string
-        | undefined;
-      const occasionIdValue = frame[occasionId] as ID | undefined;
       const newFrame = { ...frame };
 
       // Resolve sender: try session first, then senderUsername
@@ -57,12 +87,17 @@ export const CreateInviteRequest: Sync = ({
       }
 
       if (!senderId && senderUsernameValue) {
+        console.log("[CreateInviteRequest] Looking up sender by username:", senderUsernameValue);
         const senderDoc = await UserAuth._getUserByUsername({
           username: senderUsernameValue,
         });
+        console.log("[CreateInviteRequest] Sender lookup result:", senderDoc);
         if (senderDoc?._id) {
           senderId = senderDoc._id;
           newFrame[user] = senderId;
+          console.log("[CreateInviteRequest] Resolved sender ID:", senderId);
+        } else {
+          console.error("[CreateInviteRequest] Sender not found for username:", senderUsernameValue);
         }
       }
 
@@ -85,9 +120,11 @@ export const CreateInviteRequest: Sync = ({
         continue;
       }
 
+      console.log("[CreateInviteRequest] Looking up recipient by username:", recipientUsernameValue);
       const recipientDoc = await UserAuth._getUserByUsername({
         username: recipientUsernameValue,
       });
+      console.log("[CreateInviteRequest] Recipient lookup result:", recipientDoc);
 
       if (!recipientDoc?._id) {
         console.error(
@@ -107,6 +144,7 @@ export const CreateInviteRequest: Sync = ({
 
       // All validations passed - set resolved values
       newFrame[recipientUser] = recipientDoc._id;
+      newFrame[occasionId] = occasionIdValue;
 
       console.log("[CreateInviteRequest] Frame ready for createInvite:", {
         sender: senderId,
@@ -123,7 +161,8 @@ export const CreateInviteRequest: Sync = ({
     Collaborators.createInvite,
     { sender: user, recipient: recipientUser, occasionId },
   ]),
-});
+  };
+};
 
 export const CreateInviteResponseSuccess: Sync = ({ request, invite }) => ({
   when: actions(
@@ -153,22 +192,61 @@ export const AcceptInviteRequest: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/acceptInvite", session, invite },
+    { path: "/Collaborators/acceptInvite" },
     { request },
   ]),
   where: async (frames: Frames) => {
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[AcceptInviteRequest] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[AcceptInviteRequest] Request not found in database");
+      return frames;
+    }
+    
+    // Extract session, user, and invite from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const sessionValue = input.session as ID | undefined;
+    const userValue = input.user as ID | undefined;
+    const inviteValue = input.invite as ID | undefined;
+    
+    console.log("[AcceptInviteRequest] Extracted values:", { sessionValue, userValue, inviteValue });
+    
     // Verify session and get the authenticated user (recipient)
-    // Handle _getUser which returns User | null, not an array
     const authenticatedFrames: Frames = new Frames();
     for (const frame of frames) {
-      const sessionValue = frame[session] as ID | undefined;
-      if (!sessionValue) {
+      const newFrame = { ...frame };
+      
+      let userResult: ID | null = null;
+      
+      // Try to get user from session first
+      if (sessionValue) {
+        userResult = await Sessioning._getUser({ session: sessionValue });
+      }
+      
+      // Fallback: use user ID directly if no session
+      if (!userResult && userValue) {
+        userResult = userValue;
+        console.log("[AcceptInviteRequest] Using user ID directly (no session):", userResult);
+      }
+      
+      if (!userResult || !inviteValue) {
+        console.error("[AcceptInviteRequest] Missing user or invite");
         continue;
       }
-      const userResult = await Sessioning._getUser({ session: sessionValue });
-      if (userResult) {
-        authenticatedFrames.push({ ...frame, [user]: userResult });
-      }
+      
+      newFrame[user] = userResult;
+      newFrame[invite] = inviteValue;
+      authenticatedFrames.push(newFrame);
     }
     return authenticatedFrames;
   },
@@ -203,22 +281,61 @@ export const DeclineInviteRequest: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/declineInvite", session, invite },
+    { path: "/Collaborators/declineInvite" },
     { request },
   ]),
   where: async (frames: Frames) => {
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[DeclineInviteRequest] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[DeclineInviteRequest] Request not found in database");
+      return frames;
+    }
+    
+    // Extract session, user, and invite from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const sessionValue = input.session as ID | undefined;
+    const userValue = input.user as ID | undefined;
+    const inviteValue = input.invite as ID | undefined;
+    
+    console.log("[DeclineInviteRequest] Extracted values:", { sessionValue, userValue, inviteValue });
+    
     // Verify session and get the authenticated user (recipient)
-    // Handle _getUser which returns User | null, not an array
     const authenticatedFrames: Frames = new Frames();
     for (const frame of frames) {
-      const sessionValue = frame[session] as ID | undefined;
-      if (!sessionValue) {
+      const newFrame = { ...frame };
+      
+      let userResult: ID | null = null;
+      
+      // Try to get user from session first
+      if (sessionValue) {
+        userResult = await Sessioning._getUser({ session: sessionValue });
+      }
+      
+      // Fallback: use user ID directly if no session
+      if (!userResult && userValue) {
+        userResult = userValue;
+        console.log("[DeclineInviteRequest] Using user ID directly (no session):", userResult);
+      }
+      
+      if (!userResult || !inviteValue) {
+        console.error("[DeclineInviteRequest] Missing user or invite");
         continue;
       }
-      const userResult = await Sessioning._getUser({ session: sessionValue });
-      if (userResult) {
-        authenticatedFrames.push({ ...frame, [user]: userResult });
-      }
+      
+      newFrame[user] = userResult;
+      newFrame[invite] = inviteValue;
+      authenticatedFrames.push(newFrame);
     }
     return authenticatedFrames;
   },
@@ -253,37 +370,75 @@ export const GetIncomingInvitesRequest: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/_getIncomingInvites", session },
+    { path: "/Collaborators/_getIncomingInvites" },
     { request },
   ]),
   where: async (frames: Frames) => {
+    console.log("[GetIncomingInvitesRequest] where clause started, initial frames:", frames.length);
+    
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[GetIncomingInvitesRequest] No request ID in frame");
+      return frames;
+    }
+    
+    console.log("[GetIncomingInvitesRequest] Request ID:", requestValue);
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[GetIncomingInvitesRequest] Request not found in database");
+      return frames;
+    }
+    
+    console.log("[GetIncomingInvitesRequest] Request input:", requestDoc.input);
+    
+    // Extract session or user from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const sessionValue = input.session as ID | undefined;
+    const userValue = input.user as ID | undefined;
+    
+    console.log("[GetIncomingInvitesRequest] Session value:", sessionValue);
+    console.log("[GetIncomingInvitesRequest] User value:", userValue);
+    
     // Verify session and get the authenticated user
     // Handle _getUser which returns User | null, not an array
     const results: Frames = new Frames();
 
     for (const frame of frames) {
-      const sessionValue = frame[session] as ID | undefined;
       const newFrame = { ...frame };
 
-      if (!sessionValue) {
-        // No session provided - respond with empty array
-        newFrame[invites] = [];
-        results.push(newFrame);
-        continue;
+      let userResult: ID | null = null;
+      
+      // Try to get user from session first
+      if (sessionValue) {
+        userResult = await Sessioning._getUser({ session: sessionValue });
+      }
+      
+      // Fallback: use user ID directly if no session
+      if (!userResult && userValue) {
+        userResult = userValue;
+        console.log("[GetIncomingInvitesRequest] Using user ID directly (no session):", userResult);
       }
 
-      const userResult = await Sessioning._getUser({ session: sessionValue });
       if (!userResult) {
-        // Invalid session - respond with empty array
+        // No valid user - respond with empty array
+        console.log("[GetIncomingInvitesRequest] No valid user found, returning empty array");
         newFrame[invites] = [];
         results.push(newFrame);
         continue;
       }
 
       // Get invites for authenticated user
+      console.log("[GetIncomingInvitesRequest] Looking up invites for user:", userResult);
       const invitesArray = await Collaborators._getIncomingInvites({
         recipient: userResult,
       });
+      console.log("[GetIncomingInvitesRequest] Found invites:", invitesArray.length, invitesArray);
 
       newFrame[user] = userResult;
       newFrame[invites] = invitesArray;
@@ -308,28 +463,55 @@ export const GetSentInvitesRequest: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/_getSentInvites", session },
+    { path: "/Collaborators/_getSentInvites" },
     { request },
   ]),
   where: async (frames: Frames) => {
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[GetSentInvitesRequest] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[GetSentInvitesRequest] Request not found in database");
+      return frames;
+    }
+    
+    // Extract session or user from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const sessionValue = input.session as ID | undefined;
+    const userValue = input.user as ID | undefined;
+    
     // Verify session and get the authenticated user
     // Handle _getUser which returns User | null, not an array
     const results: Frames = new Frames();
 
     for (const frame of frames) {
-      const sessionValue = frame[session] as ID | undefined;
       const newFrame = { ...frame };
 
-      if (!sessionValue) {
-        // No session provided - respond with empty array
-        newFrame[invites] = [];
-        results.push(newFrame);
-        continue;
+      let userResult: ID | null = null;
+      
+      // Try to get user from session first
+      if (sessionValue) {
+        userResult = await Sessioning._getUser({ session: sessionValue });
+      }
+      
+      // Fallback: use user ID directly if no session
+      if (!userResult && userValue) {
+        userResult = userValue;
+        console.log("[GetSentInvitesRequest] Using user ID directly (no session):", userResult);
       }
 
-      const userResult = await Sessioning._getUser({ session: sessionValue });
       if (!userResult) {
-        // Invalid session - respond with empty array
+        // No valid user - respond with empty array
+        console.log("[GetSentInvitesRequest] No valid user found, returning empty array");
         newFrame[invites] = [];
         results.push(newFrame);
         continue;
@@ -362,19 +544,52 @@ export const GetCollaboratorsForOccasionRequest: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/_getCollaboratorsForOccasion", occasionId },
+    { path: "/Collaborators/_getCollaboratorsForOccasion" },
     { request },
   ]),
   where: async (frames: Frames) => {
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[GetCollaboratorsForOccasionRequest] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[GetCollaboratorsForOccasionRequest] Request not found in database");
+      return frames;
+    }
+    
+    // Extract occasionId from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const occasionIdValue = input.occasionId as ID | undefined;
+    
+    console.log("[GetCollaboratorsForOccasionRequest] Request input:", input);
+    console.log("[GetCollaboratorsForOccasionRequest] Extracted occasionId:", occasionIdValue);
+    
     const results: Frames = new Frames();
     for (const frame of frames) {
-      const occasionIdValue = frame[occasionId] as ID;
+      const newFrame = { ...frame };
+      
+      if (!occasionIdValue) {
+        console.error("[GetCollaboratorsForOccasionRequest] No occasionId in request");
+        newFrame[collaborators] = [];
+        results.push(newFrame);
+        continue;
+      }
+      
       const collaboratorsArray =
         await Collaborators._getCollaboratorsForOccasion({
           occasionId: occasionIdValue,
         });
+      
+      console.log("[GetCollaboratorsForOccasionRequest] Found collaborators:", collaboratorsArray.length, collaboratorsArray);
 
-      const newFrame = { ...frame };
       newFrame[collaborators] = collaboratorsArray;
       results.push(newFrame);
     }
@@ -524,9 +739,48 @@ export const RemoveCollaboratorRequestWithUser: Sync = ({
 }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Collaborators/removeCollaborator", user, occasionId },
+    { path: "/Collaborators/removeCollaborator" },
     { request },
   ]),
+  where: async (frames: Frames) => {
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[RemoveCollaboratorRequestWithUser] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[RemoveCollaboratorRequestWithUser] Request not found in database");
+      return frames;
+    }
+    
+    // Extract user and occasionId from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const userValue = input.user as ID | undefined;
+    const occasionIdValue = input.occasionId as ID | undefined;
+    
+    console.log("[RemoveCollaboratorRequestWithUser] Extracted values:", { userValue, occasionIdValue });
+    
+    if (!userValue || !occasionIdValue) {
+      console.error("[RemoveCollaboratorRequestWithUser] Missing user or occasionId");
+      return frames;
+    }
+    
+    const results: Frames = new Frames();
+    for (const frame of frames) {
+      const newFrame = { ...frame };
+      newFrame[user] = userValue;
+      newFrame[occasionId] = occasionIdValue;
+      results.push(newFrame);
+    }
+    return results;
+  },
   then: actions([Collaborators.removeCollaborator, { user, occasionId }]),
 });
 

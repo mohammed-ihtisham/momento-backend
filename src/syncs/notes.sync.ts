@@ -4,6 +4,8 @@
 
 import { Notes, Sessioning, Relationship, Requesting } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
+import { getDb } from "@utils/database.ts";
+import { ID } from "@utils/types.ts";
 
 /**
  * Sync: Handle createNote request with session
@@ -50,34 +52,66 @@ export const CreateNoteRequestWithSession: Sync = ({ request, session, user, rel
 export const CreateNoteRequestWithOwner: Sync = ({ request, owner, relationship, title, content, relOwner }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Notes/createNote", owner, relationship, title, content },
+    {
+      path: "/Notes/createNote",
+    },
     { request },
   ]),
   where: async (frames: Frames) => {
-    // Verify ownership of the relationship
-    const results: Frames = new Frames();
-    for (const frame of frames) {
-      const ownerValue = frame[owner] as string | undefined;
-      const relationshipValue = frame[relationship] as string | undefined;
-      
-      if (!ownerValue || !relationshipValue) {
-        // Missing required parameters - skip this frame
-        continue;
-      }
-      
-      const relationshipData = await Relationship._getRelationship({ relationship: relationshipValue });
-      
-      if (!relationshipData) {
-        // Relationship doesn't exist - skip this frame
-        continue;
-      }
-      
-      // Check if the provided owner owns this relationship
-      if (relationshipData.owner === ownerValue) {
-        results.push({ ...frame, relOwner: relationshipData.owner });
-      }
-      // If not owner, skip this frame (unauthorized)
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[CreateNoteRequestWithOwner] No request ID in frame");
+      return frames;
     }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[CreateNoteRequestWithOwner] Request not found in database");
+      return frames;
+    }
+    
+    // Extract fields from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const ownerValue = input.owner as ID | undefined;
+    const relationshipValue = input.relationship as ID | undefined;
+    const titleValue = input.title as string | undefined;
+    const contentValue = input.content as string | undefined;
+    
+    if (!ownerValue || !relationshipValue || !titleValue || !contentValue) {
+      console.error("[CreateNoteRequestWithOwner] Missing required parameters");
+      return frames;
+    }
+    
+    // Verify ownership of the relationship
+    const relationshipData = await Relationship._getRelationship({ relationship: relationshipValue });
+    
+    if (!relationshipData) {
+      console.error("[CreateNoteRequestWithOwner] Relationship doesn't exist");
+      return frames;
+    }
+    
+    // Check if the provided owner owns this relationship
+    if (relationshipData.owner !== ownerValue) {
+      console.error("[CreateNoteRequestWithOwner] Owner does not own the relationship");
+      return frames;
+    }
+    
+    // Create a frame with the extracted values
+    const results: Frames = new Frames();
+    results.push({
+      ...frames[0],
+      [owner]: ownerValue,
+      [relationship]: relationshipValue,
+      [title]: titleValue,
+      [content]: contentValue,
+      [relOwner]: relationshipData.owner,
+    });
+    
     return results;
   },
   then: actions([Notes.createNote, { owner, relationship, title, content }]),

@@ -5,6 +5,7 @@
 import { Occasion, Sessioning, Requesting, Collaborators } from "@concepts";
 import { actions, Frames, Sync } from "@engine";
 import { ID } from "@utils/types.ts";
+import { getDb } from "@utils/database.ts";
 
 /**
  * Sync: Handle createOccasion request with session
@@ -190,12 +191,46 @@ export const GetOccasionRequest: Sync = ({ request, occasion, occasionData }) =>
 export const GetOccasionsRequestWithSession: Sync = ({ request, session, user, occasions }) => ({
   when: actions([
     Requesting.request,
-    { path: "/Occasion/_getOccasions", session },
+    { path: "/Occasion/_getOccasions" },
     { request },
   ]),
   where: async (frames: Frames) => {
-    // Verify session and get the authenticated user
-    const authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
+    // Get the request record to extract input fields
+    const requestValue = frames[0]?.[request] as ID | undefined;
+    if (!requestValue) {
+      console.error("[GetOccasionsRequestWithSession] No request ID in frame");
+      return frames;
+    }
+    
+    // Query the database directly for the request document
+    const [db] = await getDb();
+    const requestsCollection = db.collection("Requesting.requests");
+    const requestDoc = await requestsCollection.findOne({ _id: requestValue });
+    
+    if (!requestDoc) {
+      console.error("[GetOccasionsRequestWithSession] Request not found in database");
+      return frames;
+    }
+    
+    // Extract session or user from request input
+    const input = requestDoc.input as Record<string, unknown>;
+    const sessionValue = input.session as ID | undefined;
+    const ownerValue = input.owner as ID | undefined;
+    
+    // Verify session and get the authenticated user, or use owner/user directly
+    let authenticatedFrames: Frames = new Frames();
+    
+    if (sessionValue) {
+      authenticatedFrames = await frames.query(Sessioning._getUser, { session: sessionValue }, { user });
+    } else if (ownerValue) {
+      // Fallback: use owner/user ID directly if no session
+      for (const frame of frames) {
+        authenticatedFrames.push({ ...frame, [user]: ownerValue });
+      }
+    } else {
+      // No session or owner - return empty
+      return frames;
+    }
     
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
@@ -265,8 +300,37 @@ export const GetOccasionsRequestWithOwner: Sync = ({ request, owner, occasions }
         continue;
       }
       
-      const occasionsArray = await Occasion._getOccasions({ owner: ownerValue });
-      newFrame[occasions] = occasionsArray;
+      // Get occasions owned by the user
+      const ownedOccasions = await Occasion._getOccasions({ owner: ownerValue });
+      
+      // Get occasions where the user is a collaborator
+      const collaboratorOccasionIds = await Collaborators._getOccasionsForCollaborator({ user: ownerValue });
+      const collaboratorOccasions = await Promise.all(
+        collaboratorOccasionIds.map(async (occasionId) => {
+          const occasionData = await Occasion._getOccasion({ occasion: occasionId });
+          if (!occasionData) return null;
+          return {
+            occasion: occasionId,
+            person: occasionData.person,
+            occasionType: occasionData.occasionType,
+            date: occasionData.date,
+          };
+        })
+      );
+      const validCollaboratorOccasions = collaboratorOccasions.filter((o) => o !== null) as Array<{
+        occasion: ID;
+        person: string;
+        occasionType: string;
+        date: string;
+      }>;
+      
+      // Combine and deduplicate by occasion ID
+      const allOccasionsMap = new Map<string, typeof ownedOccasions[0]>();
+      ownedOccasions.forEach((o) => allOccasionsMap.set(o.occasion, o));
+      validCollaboratorOccasions.forEach((o) => allOccasionsMap.set(o.occasion, o));
+      const allOccasions = Array.from(allOccasionsMap.values());
+      
+      newFrame[occasions] = allOccasions;
       results.push(newFrame);
     }
     
