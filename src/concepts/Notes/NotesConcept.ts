@@ -133,6 +133,7 @@ export default class NotesConcept {
   }: {
     note: Note;
   }): Promise<Empty | { error: string }> {
+    console.log("NOTE:", note);
     const existingNote = await this.notes.findOne({ _id: note });
     if (!existingNote) {
       return { error: `Note with ID ${note} not found.` };
