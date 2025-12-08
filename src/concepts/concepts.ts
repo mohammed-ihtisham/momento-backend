@@ -12,6 +12,7 @@ import LikertSurveyConcept from "./LikertSurvey/LikertSurveyConcept.ts";
 import UserAuthConcept from "./UserAuth/UserAuthConcept.ts";
 import RelationshipConcept from "./Relationship/RelationshipConcept.ts";
 import NotesConcept from "./Notes/NotesConcept.ts";
+import OccasionNotesConcept from "./OccasionNotes/OccasionNotesConcept.ts";
 import ProfileConcept from "./Profile/ProfileConcept.ts";
 import RequestingConcept from "./Requesting/RequestingConcept.ts";
 import SessioningConcept from "./Sessioning/SessioningConcept.ts";
@@ -26,6 +27,7 @@ export type { default as LikertSurveyConcept } from "./LikertSurvey/LikertSurvey
 export type { default as UserAuthConcept } from "./UserAuth/UserAuthConcept.ts";
 export type { default as RelationshipConcept } from "./Relationship/RelationshipConcept.ts";
 export type { default as NotesConcept } from "./Notes/NotesConcept.ts";
+export type { default as OccasionNotesConcept } from "./OccasionNotes/OccasionNotesConcept.ts";
 export type { default as ProfileConcept } from "./Profile/ProfileConcept.ts";
 export type { default as RequestingConcept } from "./Requesting/RequestingConcept.ts";
 export type { default as SessioningConcept } from "./Sessioning/SessioningConcept.ts";
@@ -38,16 +40,31 @@ export type { default as OccasionConcept } from "./Occasion/OccasionConcept.ts";
 // Initialize the database connection
 export const [db, client] = await getDb();
 
-export const Collaborators = Engine.instrumentConcept(new CollaboratorsConcept(db));
-export const LikertSurvey = Engine.instrumentConcept(new LikertSurveyConcept(db));
+export const Collaborators = Engine.instrumentConcept(
+  new CollaboratorsConcept(db)
+);
+export const LikertSurvey = Engine.instrumentConcept(
+  new LikertSurveyConcept(db)
+);
 export const UserAuth = Engine.instrumentConcept(new UserAuthConcept(db));
-export const Relationship = Engine.instrumentConcept(new RelationshipConcept(db));
+export const Relationship = Engine.instrumentConcept(
+  new RelationshipConcept(db)
+);
 export const Notes = Engine.instrumentConcept(new NotesConcept(db));
+export const OccasionNotes = Engine.instrumentConcept(
+  new OccasionNotesConcept(db)
+);
 export const Profile = Engine.instrumentConcept(new ProfileConcept(db));
 export const Requesting = Engine.instrumentConcept(new RequestingConcept(db));
 export const Sessioning = Engine.instrumentConcept(new SessioningConcept(db));
-export const MemoryGallery = Engine.instrumentConcept(new MemoryGalleryConcept(db));
+export const MemoryGallery = Engine.instrumentConcept(
+  new MemoryGalleryConcept(db)
+);
 export const Task = Engine.instrumentConcept(new TaskConcept(db));
-export const TaskChecklist = Engine.instrumentConcept(new TaskChecklistConcept(db));
-export const SuggestionEngine = Engine.instrumentConcept(new SuggestionEngineConcept(db));
+export const TaskChecklist = Engine.instrumentConcept(
+  new TaskChecklistConcept(db)
+);
+export const SuggestionEngine = Engine.instrumentConcept(
+  new SuggestionEngineConcept(db)
+);
 export const Occasion = Engine.instrumentConcept(new OccasionConcept(db));
