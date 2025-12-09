@@ -9,36 +9,55 @@ import { actions, Frames, Sync } from "@engine";
  * Sync: Handle createTask request with session
  * Requires authentication - user creates tasks for themselves.
  */
-export const CreateTaskRequestWithSession: Sync = ({ request, session, user, description }) => ({
+export const CreateTaskRequestWithSession: Sync = ({
+  request,
+  session,
+  user,
+  occasionId,
+  description,
+  priority,
+}) => ({
   when: actions([
     Requesting.request,
-    { path: "/Task/createTask", session, description },
+    { path: "/Task/createTask", session, occasionId, description, priority },
     { request },
   ]),
   where: async (frames: Frames) => {
     // Verify session and get the authenticated user (who becomes the owner)
     return await frames.query(Sessioning._getUser, { session }, { user });
   },
-  then: actions([Task.createTask, { owner: user, description }]),
+  then: actions([
+    Task.createTask,
+    { owner: user, occasionId, description, priority },
+  ]),
 });
 
 /**
  * Sync: Handle createTask request with owner (backward compatibility)
  * Accepts owner directly for backward compatibility.
  */
-export const CreateTaskRequestWithOwner: Sync = ({ request, owner, description }) => ({
+export const CreateTaskRequestWithOwner: Sync = ({
+  request,
+  owner,
+  occasionId,
+  description,
+  priority,
+}) => ({
   when: actions([
     Requesting.request,
-    { path: "/Task/createTask", owner, description },
+    { path: "/Task/createTask", owner, occasionId, description, priority },
     { request },
   ]),
-  then: actions([Task.createTask, { owner, description }]),
+  then: actions([
+    Task.createTask,
+    { owner, occasionId, description, priority },
+  ]),
 });
 
 export const CreateTaskResponseSuccess: Sync = ({ request, task }) => ({
   when: actions(
     [Requesting.request, { path: "/Task/createTask" }, { request }],
-    [Task.createTask, {}, { task }],
+    [Task.createTask, {}, { task }]
   ),
   then: actions([Requesting.respond, { request, task }]),
 });
@@ -46,7 +65,7 @@ export const CreateTaskResponseSuccess: Sync = ({ request, task }) => ({
 export const CreateTaskResponseError: Sync = ({ request, error }) => ({
   when: actions(
     [Requesting.request, { path: "/Task/createTask" }, { request }],
-    [Task.createTask, {}, { error }],
+    [Task.createTask, {}, { error }]
   ),
   then: actions([Requesting.respond, { request, error }]),
 });
@@ -55,7 +74,14 @@ export const CreateTaskResponseError: Sync = ({ request, error }) => ({
  * Sync: Handle updateTaskDescription request with session
  * Requires authentication AND ownership verification - user can only update their own tasks.
  */
-export const UpdateTaskDescriptionRequestWithSession: Sync = ({ request, session, user, task, description, owner }) => ({
+export const UpdateTaskDescriptionRequestWithSession: Sync = ({
+  request,
+  session,
+  user,
+  task,
+  description,
+  owner,
+}) => ({
   when: actions([
     Requesting.request,
     { path: "/Task/updateTaskDescription", session, task, description },
@@ -63,19 +89,23 @@ export const UpdateTaskDescriptionRequestWithSession: Sync = ({ request, session
   ]),
   where: async (frames: Frames) => {
     // First verify session and get the authenticated user
-    let authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
-    
+    let authenticatedFrames = await frames.query(
+      Sessioning._getUser,
+      { session },
+      { user }
+    );
+
     // Then verify ownership by getting the task's owner
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
       const taskValue = frame[task] as string;
       const taskData = await Task._getTask({ task: taskValue });
-      
+
       if (!taskData) {
         // Task doesn't exist - skip this frame (will result in error)
         continue;
       }
-      
+
       // Check if the authenticated user owns this task
       if (taskData.owner === frame[user]) {
         results.push({ ...frame, owner: taskData.owner });
@@ -91,7 +121,12 @@ export const UpdateTaskDescriptionRequestWithSession: Sync = ({ request, session
  * Sync: Handle updateTaskDescription request with owner (backward compatibility)
  * Accepts owner directly for backward compatibility.
  */
-export const UpdateTaskDescriptionRequestWithOwner: Sync = ({ request, owner, task, description }) => ({
+export const UpdateTaskDescriptionRequestWithOwner: Sync = ({
+  request,
+  owner,
+  task,
+  description,
+}) => ({
   when: actions([
     Requesting.request,
     { path: "/Task/updateTaskDescription", owner, task, description },
@@ -100,18 +135,24 @@ export const UpdateTaskDescriptionRequestWithOwner: Sync = ({ request, owner, ta
   then: actions([Task.updateTaskDescription, { task, description }]),
 });
 
-export const UpdateTaskDescriptionResponseSuccess: Sync = ({ request, task }) => ({
+export const UpdateTaskDescriptionResponseSuccess: Sync = ({
+  request,
+  task,
+}) => ({
   when: actions(
     [Requesting.request, { path: "/Task/updateTaskDescription" }, { request }],
-    [Task.updateTaskDescription, {}, { task }],
+    [Task.updateTaskDescription, {}, { task }]
   ),
   then: actions([Requesting.respond, { request, task }]),
 });
 
-export const UpdateTaskDescriptionResponseError: Sync = ({ request, error }) => ({
+export const UpdateTaskDescriptionResponseError: Sync = ({
+  request,
+  error,
+}) => ({
   when: actions(
     [Requesting.request, { path: "/Task/updateTaskDescription" }, { request }],
-    [Task.updateTaskDescription, {}, { error }],
+    [Task.updateTaskDescription, {}, { error }]
   ),
   then: actions([Requesting.respond, { request, error }]),
 });
@@ -120,7 +161,13 @@ export const UpdateTaskDescriptionResponseError: Sync = ({ request, error }) => 
  * Sync: Handle deleteTask request with session
  * Requires authentication AND ownership verification - user can only delete their own tasks.
  */
-export const DeleteTaskRequestWithSession: Sync = ({ request, session, user, task, owner }) => ({
+export const DeleteTaskRequestWithSession: Sync = ({
+  request,
+  session,
+  user,
+  task,
+  owner,
+}) => ({
   when: actions([
     Requesting.request,
     { path: "/Task/deleteTask", session, task },
@@ -128,19 +175,23 @@ export const DeleteTaskRequestWithSession: Sync = ({ request, session, user, tas
   ]),
   where: async (frames: Frames) => {
     // First verify session and get the authenticated user
-    let authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
-    
+    let authenticatedFrames = await frames.query(
+      Sessioning._getUser,
+      { session },
+      { user }
+    );
+
     // Then verify ownership by getting the task's owner
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
       const taskValue = frame[task] as string;
       const taskData = await Task._getTask({ task: taskValue });
-      
+
       if (!taskData) {
         // Task doesn't exist - skip this frame (will result in error)
         continue;
       }
-      
+
       // Check if the authenticated user owns this task
       if (taskData.owner === frame[user]) {
         results.push({ ...frame, owner: taskData.owner });
@@ -168,7 +219,7 @@ export const DeleteTaskRequestWithOwner: Sync = ({ request, owner, task }) => ({
 export const DeleteTaskResponseSuccess: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/Task/deleteTask" }, { request }],
-    [Task.deleteTask, {}, {}],
+    [Task.deleteTask, {}, {}]
   ),
   then: actions([Requesting.respond, { request, status: "deleted" }]),
 });
@@ -176,7 +227,7 @@ export const DeleteTaskResponseSuccess: Sync = ({ request }) => ({
 export const DeleteTaskResponseError: Sync = ({ request, error }) => ({
   when: actions(
     [Requesting.request, { path: "/Task/deleteTask" }, { request }],
-    [Task.deleteTask, {}, { error }],
+    [Task.deleteTask, {}, { error }]
   ),
   then: actions([Requesting.respond, { request, error }]),
 });
@@ -197,7 +248,7 @@ export const GetTaskRequest: Sync = ({ request, task, taskData }) => ({
     for (const frame of frames) {
       const taskValue = frame[task] as string;
       const taskResult = await Task._getTask({ task: taskValue });
-      
+
       const newFrame = { ...frame };
       newFrame[taskData] = taskResult;
       results.push(newFrame);
@@ -209,23 +260,33 @@ export const GetTaskRequest: Sync = ({ request, task, taskData }) => ({
 
 /**
  * Sync: Handle _getTasks request with session
- * Requires authentication - user can only see their own tasks.
+ * Requires authentication - user can see tasks for a specific occasion.
  */
-export const GetTasksRequestWithSession: Sync = ({ request, session, user, tasks }) => ({
+export const GetTasksRequestWithSession: Sync = ({
+  request,
+  session,
+  user,
+  occasionId,
+  tasks,
+}) => ({
   when: actions([
     Requesting.request,
-    { path: "/Task/_getTasks", session },
+    { path: "/Task/_getTasks", session, occasionId },
     { request },
   ]),
   where: async (frames: Frames) => {
-    // Verify session and get the authenticated user (who is the owner)
-    const authenticatedFrames = await frames.query(Sessioning._getUser, { session }, { user });
-    
+    // Verify session and get the authenticated user
+    const authenticatedFrames = await frames.query(
+      Sessioning._getUser,
+      { session },
+      { user }
+    );
+
     const results: Frames = new Frames();
     for (const frame of authenticatedFrames) {
-      const ownerValue = frame[user] as string;
-      const tasksArray = await Task._getTasks({ owner: ownerValue });
-      
+      const occasionIdValue = frame[occasionId] as string;
+      const tasksArray = await Task._getTasks({ occasionId: occasionIdValue });
+
       const newFrame = { ...frame };
       newFrame[tasks] = tasksArray;
       results.push(newFrame);
@@ -236,37 +297,40 @@ export const GetTasksRequestWithSession: Sync = ({ request, session, user, tasks
 });
 
 /**
- * Sync: Handle _getTasks request with owner (backward compatibility)
- * Accepts owner directly for backward compatibility.
+ * Sync: Handle _getTasks request with occasionId (backward compatibility)
+ * Accepts occasionId directly for backward compatibility.
  */
-export const GetTasksRequestWithOwner: Sync = ({ request, owner, tasks }) => ({
+export const GetTasksRequestWithOccasionId: Sync = ({
+  request,
+  occasionId,
+  tasks,
+}) => ({
   when: actions([
     Requesting.request,
-    { path: "/Task/_getTasks", owner },
+    { path: "/Task/_getTasks", occasionId },
     { request },
   ]),
   where: async (frames: Frames) => {
     const results: Frames = new Frames();
-    
+
     for (const frame of frames) {
-      const ownerValue = frame[owner] as string | undefined;
-      
+      const occasionIdValue = frame[occasionId] as string | undefined;
+
       const newFrame = { ...frame };
-      
-      if (!ownerValue) {
-        // No owner provided - respond with empty array
+
+      if (!occasionIdValue) {
+        // No occasionId provided - respond with empty array
         newFrame[tasks] = [];
         results.push(newFrame);
         continue;
       }
-      
-      const tasksArray = await Task._getTasks({ owner: ownerValue });
+
+      const tasksArray = await Task._getTasks({ occasionId: occasionIdValue });
       newFrame[tasks] = tasksArray;
       results.push(newFrame);
     }
-    
+
     return results.length > 0 ? results : frames;
   },
   then: actions([Requesting.respond, { request, tasks }]),
 });
-
