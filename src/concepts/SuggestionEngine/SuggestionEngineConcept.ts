@@ -9,6 +9,7 @@ const PREFIX = "SuggestionEngine" + ".";
 
 // Generic types for the concept's external dependencies
 type User = ID;
+type Occasion = ID;
 
 // Internal entity types, represented as IDs
 type Suggestion = ID;
@@ -21,13 +22,14 @@ type Suggestion = ID;
 export type SuggestionContext = Record<string, unknown>;
 
 /**
- * State: A set of Suggestions with an owner, content, and generatedAt date.
+ * State: A set of Suggestions with an owner, content, generatedAt date, and occasionId.
  */
 interface SuggestionDoc {
   _id: Suggestion;
   owner: User;
   content: string;
   generatedAt: Date;
+  occasionId: Occasion;
 }
 
 /**
@@ -52,10 +54,10 @@ async function generateSuggestionContent(
   // Format the context into a structured prompt
   const contextStr = JSON.stringify(context, null, 2);
   const prompt = `Based on the following contextual information about a user, generate a helpful and actionable suggestion. The suggestion should be relevant, practical, and personalized to the context provided.
-
+ 
 Context:
 ${contextStr}
-
+ 
 Please provide a clear, concise suggestion that addresses the user's needs based on this context.`;
 
   try {
@@ -90,12 +92,12 @@ Please provide a clear, concise suggestion that addresses the user's needs based
  */
 async function generateGiftSuggestionsFromNotes(
   context: SuggestionContext,
-  count = 3,
+  count = 3
 ): Promise<string[]> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY environment variable is not set. Please configure your Gemini API key.",
+      "GEMINI_API_KEY environment variable is not set. Please configure your Gemini API key."
     );
   }
 
@@ -106,16 +108,16 @@ async function generateGiftSuggestionsFromNotes(
   const contextStr = JSON.stringify(context, null, 2);
 
   const prompt = `You are a helpful assistant that suggests **personalized gifts or small thoughtful gestures** for a specific person.
-
+ 
 You are given an object that contains **aggregated shared notes** about this person (their preferences, habits, important dates, relationship details, etc.), plus some extra metadata. Use ONLY this information to ground your ideas.
-
+ 
 Your task:
 - Generate **exactly ${count}** distinct, concrete gift or gesture ideas.
 - Each idea should be **practical**, **specific**, and clearly tied to details from the notes.
 - Include a short explanation of *why* this idea is a good fit for this person.
-
+ 
 Return the result as **ONLY valid JSON**, with no extra text or markdown, in the following format:
-
+ 
 [
   {
     "title": "short name of the gift or gesture",
@@ -124,9 +126,9 @@ Return the result as **ONLY valid JSON**, with no extra text or markdown, in the
   },
   ...
 ]
-
+ 
 Context (aggregated shared notes and metadata as JSON):
-
+ 
 ${contextStr}
 `;
 
@@ -144,7 +146,7 @@ ${contextStr}
       parsed = JSON.parse(text);
     } catch (e) {
       throw new Error(
-        `Gemini did not return valid JSON: ${(e as Error).message}`,
+        `Gemini did not return valid JSON: ${(e as Error).message}`
       );
     }
 
@@ -163,7 +165,7 @@ ${contextStr}
         (g) =>
           typeof g.title === "string" &&
           typeof g.description === "string" &&
-          typeof g.whyItFits === "string",
+          typeof g.whyItFits === "string"
       )
       .slice(0, count);
 
@@ -173,17 +175,16 @@ ${contextStr}
 
     // Flatten into a single string per suggestion for storage/display
     return gifts.map(
-      (g) =>
-        `${g.title}: ${g.description} (Why it fits: ${g.whyItFits})`,
+      (g) => `${g.title}: ${g.description} (Why it fits: ${g.whyItFits})`
     );
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(
-        `Failed to generate gift suggestions with Gemini API: ${error.message}`,
+        `Failed to generate gift suggestions with Gemini API: ${error.message}`
       );
     }
     throw new Error(
-      "Failed to generate gift suggestions with Gemini API: Unknown error",
+      "Failed to generate gift suggestions with Gemini API: Unknown error"
     );
   }
 }
@@ -206,9 +207,11 @@ export default class SuggestionEngineConcept {
   async generateSuggestion({
     owner,
     context,
+    occasionId,
   }: {
     owner: User;
     context: SuggestionContext;
+    occasionId: Occasion;
   }): Promise<{ suggestion: Suggestion; content: string } | { error: string }> {
     // Validate that context is a non-empty object
     if (
@@ -219,6 +222,40 @@ export default class SuggestionEngineConcept {
       return {
         error:
           "Context must be a valid non-empty object containing sufficient information.",
+      };
+    }
+
+    // Validate and parse occasionId (handle case where it might be JSON-stringified)
+    let parsedOccasionId: Occasion;
+    if (typeof occasionId === "string") {
+      // Try to parse if it's a JSON-stringified string
+      try {
+        const parsed = JSON.parse(occasionId);
+        // If parsed result is a string, use it; otherwise use original
+        if (typeof parsed === "string") {
+          parsedOccasionId = parsed
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        } else {
+          parsedOccasionId = occasionId
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        }
+      } catch {
+        // If parsing fails, use the original value and remove quotes
+        parsedOccasionId = occasionId
+          .trim()
+          .replace(/^["']|["']$/g, "") as Occasion;
+      }
+    } else {
+      parsedOccasionId = String(occasionId)
+        .trim()
+        .replace(/^["']|["']$/g, "") as Occasion;
+    }
+
+    if (!parsedOccasionId || parsedOccasionId === "") {
+      return {
+        error: "occasionId must be a valid non-empty string.",
       };
     }
 
@@ -247,6 +284,7 @@ export default class SuggestionEngineConcept {
       owner,
       content,
       generatedAt,
+      occasionId: parsedOccasionId,
     });
 
     return { suggestion: suggestionId, content };
@@ -268,9 +306,13 @@ export default class SuggestionEngineConcept {
   async generateGiftSuggestions({
     owner,
     context,
+    occasionId,
+    occasion, // Accept 'occasion' from frontend as well
   }: {
     owner: User;
     context: SuggestionContext;
+    occasionId?: Occasion;
+    occasion?: Occasion; // Accept 'occasion' from frontend as well
   }): Promise<
     | {
         suggestions: Array<{ suggestion: Suggestion; content: string }>;
@@ -285,6 +327,49 @@ export default class SuggestionEngineConcept {
       return {
         error:
           "Context must be a valid non-empty object containing sufficient information (including aggregated shared notes).",
+      };
+    }
+
+    // Use occasionId if provided, otherwise fall back to occasion (for passthrough compatibility)
+    const rawOccasionId = occasionId || occasion;
+
+    if (!rawOccasionId) {
+      return {
+        error: "occasionId or occasion must be provided.",
+      };
+    }
+
+    // Validate and parse occasionId (handle case where it might be JSON-stringified)
+    let parsedOccasionId: Occasion;
+    if (typeof rawOccasionId === "string") {
+      // Try to parse if it's a JSON-stringified string
+      try {
+        const parsed = JSON.parse(rawOccasionId);
+        // If parsed result is a string, use it; otherwise use original
+        if (typeof parsed === "string") {
+          parsedOccasionId = parsed
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        } else {
+          parsedOccasionId = rawOccasionId
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        }
+      } catch {
+        // If parsing fails, use the original value and remove quotes
+        parsedOccasionId = rawOccasionId
+          .trim()
+          .replace(/^["']|["']$/g, "") as Occasion;
+      }
+    } else {
+      parsedOccasionId = String(rawOccasionId)
+        .trim()
+        .replace(/^["']|["']$/g, "") as Occasion;
+    }
+
+    if (!parsedOccasionId || parsedOccasionId === "") {
+      return {
+        error: "occasionId must be a valid non-empty string.",
       };
     }
 
@@ -310,12 +395,12 @@ export default class SuggestionEngineConcept {
 
     for (const content of contents) {
       const suggestionId = freshID() as Suggestion;
-
       await this.suggestions.insertOne({
         _id: suggestionId,
         owner,
         content,
         generatedAt,
+        occasionId: parsedOccasionId,
       });
 
       results.push({ suggestion: suggestionId, content });
@@ -325,20 +410,70 @@ export default class SuggestionEngineConcept {
   }
 
   /**
-   * Query: Retrieves all suggestions for an owner.
+   * Query: Retrieves all suggestions for a specific occasion.
    */
-  async _getSuggestions({ owner }: { owner: User }): Promise<
+  async _getSuggestions({
+    occasionId,
+    occasion, // Accept 'occasion' from frontend/sync as well
+  }: {
+    occasionId?: Occasion;
+    occasion?: Occasion; // Accept 'occasion' from frontend/sync as well
+  }): Promise<
     Array<{
       suggestion: Suggestion;
       content: string;
       generatedAt: Date;
+      occasionId: Occasion;
     }>
   > {
-    const suggestions = await this.suggestions.find({ owner }).toArray();
+    // Use occasionId if provided, otherwise fall back to occasion (for passthrough/sync compatibility)
+    const rawOccasionId = occasionId || occasion;
+
+    if (!rawOccasionId) {
+      return [];
+    }
+
+    // Parse occasionId (handle case where it might be JSON-stringified)
+    let parsedOccasionId: Occasion;
+    if (typeof rawOccasionId === "string") {
+      // Try to parse if it's a JSON-stringified string
+      try {
+        const parsed = JSON.parse(rawOccasionId);
+        // If parsed result is a string, use it; otherwise use original
+        if (typeof parsed === "string") {
+          parsedOccasionId = parsed
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        } else {
+          parsedOccasionId = rawOccasionId
+            .trim()
+            .replace(/^["']|["']$/g, "") as Occasion;
+        }
+      } catch {
+        // If parsing fails, use the original value and remove quotes
+        parsedOccasionId = rawOccasionId
+          .trim()
+          .replace(/^["']|["']$/g, "") as Occasion;
+      }
+    } else {
+      parsedOccasionId = String(rawOccasionId)
+        .trim()
+        .replace(/^["']|["']$/g, "") as Occasion;
+    }
+
+    if (!parsedOccasionId || parsedOccasionId === "") {
+      return [];
+    }
+
+    const suggestions = await this.suggestions
+      .find({ occasionId: parsedOccasionId })
+      .toArray();
+    console.log(`SUGGESTIONS:`, suggestions);
     return suggestions.map((s) => ({
       suggestion: s._id,
       content: s.content,
       generatedAt: s.generatedAt,
+      occasionId: s.occasionId,
     }));
   }
 }
